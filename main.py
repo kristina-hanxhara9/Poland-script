@@ -2,9 +2,10 @@
 """
 Poland Business PKD Code Analysis
 
-Main entry point. Reads an Excel file with business data (name, zip, channel),
-looks up PKD codes via Poland government APIs, and analyzes which PKD codes
-correspond to each channel category (DIY shops, Paint specialists, Builders merchants).
+Main entry point. Reads an Excel file with business data (name, zip, channel columns),
+looks up ALL businesses via Poland government APIs (CEIDG, KRS, GUS),
+extracts full details (address, status, PKD codes, etc.), and analyzes
+which PKD/SIC codes correspond to DIY shops, Paint specialists, Builders merchants.
 
 Usage:
     python main.py input.xlsx [--output results.xlsx] [--ceidg-key KEY] [--gus-key KEY] [--sandbox]
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Analyze Polish businesses and their PKD codes by channel category."
+        description="Analyze Polish businesses: look up PKD/SIC codes and classify by channel category."
     )
     parser.add_argument("input_file", help="Path to input Excel file (.xlsx)")
     parser.add_argument(
@@ -62,10 +63,10 @@ def main():
     )
     args = parser.parse_args()
 
-    # Load Excel
+    # Load Excel (ALL rows, not filtered)
     logger.info(f"Loading input file: {args.input_file}")
     try:
-        full_df, filtered_df, channel_col = load_excel(args.input_file, args.channel_column)
+        df, channel_cols = load_excel(args.input_file, args.channel_column)
     except FileNotFoundError:
         logger.error(f"File not found: {args.input_file}")
         sys.exit(1)
@@ -73,11 +74,10 @@ def main():
         logger.error(str(e))
         sys.exit(1)
 
-    logger.info(f"Total rows: {len(full_df)}, Filtered (target categories): {len(filtered_df)}")
+    logger.info(f"Total rows to process: {len(df)}")
 
-    if filtered_df.empty:
-        logger.warning("No rows match target categories (DIY shops, Paint specialists, Builders merchants).")
-        logger.info(f"Available channel values: {full_df[channel_col].unique().tolist()}")
+    if df.empty:
+        logger.warning("No data found in the input file.")
         sys.exit(0)
 
     # Set up API client
@@ -87,29 +87,26 @@ def main():
         use_sandbox=args.sandbox,
     )
 
-    if api_client.has_api_access():
-        logger.info("API access configured. Will look up PKD codes from government databases.")
-    else:
-        logger.info(
-            "No API keys configured. Running keyword-based analysis only.\n"
-            "To enable API lookups, set CEIDG_API_KEY or GUS_API_KEY environment variables,\n"
-            "or use --ceidg-key / --gus-key / --sandbox flags."
-        )
+    if args.ceidg_key or api_client.ceidg_api_key:
+        logger.info("CEIDG API key configured.")
+    if args.gus_key or api_client.gus_api_key:
+        logger.info("GUS API key configured.")
+    logger.info("KRS API: always available (free, no auth needed).")
 
-    # Run analysis
-    enriched_df, report = run_full_analysis(filtered_df, api_client)
+    # Run analysis on ALL businesses
+    enriched_df, report = run_full_analysis(df, api_client)
 
     # Save output Excel
     logger.info(f"Saving enriched data to: {args.output}")
 
-    # Prepare output columns - convert lists to strings for Excel
     output_df = enriched_df.copy()
-    output_df["pkd_codes"] = output_df["pkd_codes"].apply(
-        lambda x: "; ".join(x) if isinstance(x, list) else str(x)
-    )
-    output_df["pkd_descriptions"] = output_df["pkd_descriptions"].apply(
-        lambda x: "; ".join(x) if isinstance(x, list) else str(x)
-    )
+    # Convert lists to strings for Excel compatibility
+    for col in output_df.columns:
+        if output_df[col].apply(lambda x: isinstance(x, list)).any():
+            output_df[col] = output_df[col].apply(
+                lambda x: "; ".join(str(i) for i in x) if isinstance(x, list) else str(x)
+            )
+
     output_df.to_excel(args.output, index=False)
 
     # Save text report
