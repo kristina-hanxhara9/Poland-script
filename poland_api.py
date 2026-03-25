@@ -437,6 +437,119 @@ class PolandAPIClient:
             logger.error(f"GUS full report error for REGON {regon}: {e}")
             return {}
 
+    def search_gus_by_nip(self, nip):
+        """
+        Search GUS REGON by NIP number.
+
+        Returns a result dict with full business info, or None.
+        """
+        if not self._gus_session_id:
+            if not self._gus_login():
+                return None
+
+        url = GUS_SANDBOX_URL if self.use_sandbox else GUS_PRODUCTION_URL
+
+        envelope = f"""<?xml version="1.0" encoding="utf-8"?>
+        <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
+                       xmlns:ns="http://CIS/BIR/PUBL/2014/07"
+                       xmlns:dat="http://CIS/BIR/PUBL/2014/07/DataContract">
+            <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
+                <wsa:To>{url}</wsa:To>
+                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzworku/DaneSzukajPodmioty</wsa:Action>
+            </soap:Header>
+            <soap:Body>
+                <ns:DaneSzukajPodmioty>
+                    <ns:pParametryWyszukiwania>
+                        <dat:Nip>{nip}</dat:Nip>
+                    </ns:pParametryWyszukiwania>
+                </ns:DaneSzukajPodmioty>
+            </soap:Body>
+        </soap:Envelope>"""
+
+        headers = {
+            "Content-Type": "application/soap+xml; charset=utf-8",
+            "sid": self._gus_session_id,
+        }
+
+        try:
+            response = requests.post(url, data=envelope, headers=headers, timeout=30)
+            response.raise_for_status()
+
+            root = ElementTree.fromstring(response.text)
+
+            for elem in root.iter():
+                if "DaneSzukajPodmiotyResult" in elem.tag and elem.text:
+                    inner = ElementTree.fromstring(elem.text)
+                    for dane in inner.iter("dane"):
+                        regon = self._get_xml_text(dane, "Regon")
+                        entity_type = self._get_xml_text(dane, "Typ")
+
+                        address = {
+                            "street": self._get_xml_text(dane, "Ulica"),
+                            "building": self._get_xml_text(dane, "NrNieruchomosci"),
+                            "unit": self._get_xml_text(dane, "NrLokalu"),
+                            "zip_code": self._get_xml_text(dane, "KodPocztowy"),
+                            "city": self._get_xml_text(dane, "Miejscowosc"),
+                            "municipality": self._get_xml_text(dane, "Gmina"),
+                            "county": self._get_xml_text(dane, "Powiat"),
+                            "province": self._get_xml_text(dane, "Wojewodztwo"),
+                            "country": "PL",
+                        }
+
+                        status_zakonczenia = self._get_xml_text(dane, "DataZakonczeniaDzialalnosci")
+
+                        result = {
+                            "name": self._get_xml_text(dane, "Nazwa"),
+                            "nip": self._get_xml_text(dane, "Nip"),
+                            "regon": regon,
+                            "krs": "",
+                            "address": address,
+                            "address_str": _format_address(address),
+                            "street": address.get("street", ""),
+                            "building": address.get("building", ""),
+                            "unit": address.get("unit", ""),
+                            "zip_code": address.get("zip_code", ""),
+                            "city": address.get("city", ""),
+                            "municipality": address.get("municipality", ""),
+                            "county": address.get("county", ""),
+                            "province": address.get("province", ""),
+                            "country": address.get("country", ""),
+                            "mailing_address_str": "",
+                            "status": "WYKRESLONY" if status_zakonczenia else "AKTYWNY",
+                            "is_active": not bool(status_zakonczenia),
+                            "date_started": self._get_xml_text(dane, "DataRozpoczeciaDzialalnosci"),
+                            "date_ended": status_zakonczenia,
+                            "date_suspended": "",
+                            "date_resumed": "",
+                            "date_deleted": "",
+                            "pkd_codes": [],
+                            "pkd_main": self._get_xml_text(dane, "PKD"),
+                            "owner_first_name": "",
+                            "owner_last_name": "",
+                            "email": "",
+                            "phone": "",
+                            "website": "",
+                            "ceidg_link": "",
+                            "entity_type": entity_type,
+                            "source": "GUS",
+                        }
+                        if result["pkd_main"]:
+                            result["pkd_codes"].append(result["pkd_main"])
+
+                        # Get full report for more details (email, phone, website, extra PKD)
+                        if regon and entity_type in ("F", "P"):
+                            full = self._gus_full_report(regon, entity_type)
+                            if full:
+                                self._enrich_from_gus_report(result, full, entity_type)
+
+                        return result  # NIP is unique, return first match
+
+            return None
+
+        except Exception as e:
+            logger.error(f"GUS NIP search error for '{nip}': {e}")
+            return None
+
     def search_gus_by_name(self, name):
         """
         Search GUS REGON by company name.
