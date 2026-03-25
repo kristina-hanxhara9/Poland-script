@@ -73,6 +73,26 @@ def get_pkd_description(code):
         return ""
 
 
+def simplify_name(name):
+    """Simplify a business name for retry search — remove legal form suffixes, extra words."""
+    name = name.lower().strip()
+    # Remove common Polish legal form suffixes
+    for suffix in [
+        " sp. z o.o.", " sp.z o.o.", " spółka z o.o.", " spolka z o.o.",
+        " sp. z o. o.", " s.a.", " sp.j.", " sp.k.", " sp. komandytowa",
+        " spółka jawna", " spolka jawna", " spółka akcyjna", " spolka akcyjna",
+        " s.c.", " sp. cywilna", " spółka cywilna", " spolka cywilna",
+        " sp. z o.o. sp. k.", " sp. z o.o. sp.k.",
+        " z o.o.", " z.o.o.",
+    ]:
+        if name.endswith(suffix):
+            name = name[:-len(suffix)].strip()
+            break
+    # Remove quotes and extra punctuation
+    name = name.strip('"\'').strip()
+    return name
+
+
 def normalize_zip(z):
     """Normalize zip code: strip whitespace, dashes, etc."""
     s = str(z).strip().replace("-", "").replace(" ", "")
@@ -213,6 +233,13 @@ def main():
         logger.info(f"[{idx + 1}/{len(work)}] Searching: '{name}' (zip: {input_zip})")
 
         results = api_client.search_gus_by_name(name)
+
+        # If no results, try with simplified name (first 2-3 words, no legal form)
+        if not results:
+            simplified = simplify_name(name)
+            if simplified != name.lower().strip():
+                logger.info(f"  Retrying with simplified name: '{simplified}'")
+                results = api_client.search_gus_by_name(simplified)
 
         if not results:
             not_found += 1
