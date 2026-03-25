@@ -177,7 +177,9 @@ def main():
         if result:
             found += 1
             pkd_codes = result.get("pkd_codes", [])
-            pkd_descs = [get_pkd_description(c) for c in pkd_codes]
+            # Use descriptions from GUS API first, fall back to local dictionary
+            api_descs = result.get("pkd_descriptions", {})
+            pkd_descs = [api_descs.get(c, "") or get_pkd_description(c) for c in pkd_codes]
 
             rows.append({
                 "nip": nip,

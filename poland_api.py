@@ -484,13 +484,21 @@ class PolandAPIClient:
             return []
 
         results = self._gus_fetch_report(regon, report_name)
+        logger.info(f"  PKD report '{report_name}' returned {len(results)} entries")
+        if results:
+            logger.info(f"  PKD report keys: {list(results[0].keys())}")
         pkd_codes = []
         for item in results:
-            # PKD report returns one row per code
-            code = item.get("fiz_pkd_Kod", "") or item.get("praw_pkdKod", "") or item.get("Kod", "")
-            is_main = item.get("fiz_pkd_Przewazajace", "") == "1" or item.get("praw_pkdPrzewazajace", "") == "1" or item.get("Przewazajace", "") == "1"
+            # PKD report returns one row per code — try all known field name variants
+            code = (item.get("fiz_pkd_Kod", "") or item.get("praw_pkdKod", "")
+                    or item.get("Kod", "") or item.get("kod", ""))
+            desc = (item.get("fiz_pkd_Nazwa", "") or item.get("praw_pkdNazwa", "")
+                    or item.get("Nazwa", "") or item.get("nazwa", ""))
+            is_main = (item.get("fiz_pkd_Przewazajace", "") == "1"
+                       or item.get("praw_pkdPrzewazajace", "") == "1"
+                       or item.get("Przewazajace", "") == "1")
             if code:
-                pkd_codes.append({"code": code, "is_main": is_main})
+                pkd_codes.append({"code": code, "description": desc, "is_main": is_main})
         return pkd_codes
 
     def _parse_gus_dane(self, dane):
@@ -554,10 +562,13 @@ class PolandAPIClient:
             # Fetch PKD codes from dedicated PKD report
             pkd_list = self._gus_pkd_report(regon, entity_type)
             if pkd_list:
+                result["pkd_descriptions"] = {}
                 for pkd in pkd_list:
                     code = pkd["code"]
                     if code not in result["pkd_codes"]:
                         result["pkd_codes"].append(code)
+                    if pkd["description"]:
+                        result["pkd_descriptions"][code] = pkd["description"]
                     if pkd["is_main"]:
                         result["pkd_main"] = code
                 # If we still have no main, use first code
