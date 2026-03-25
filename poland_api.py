@@ -372,14 +372,20 @@ class PolandAPIClient:
         headers = {"Content-Type": "application/soap+xml; charset=utf-8"}
 
         try:
+            logger.info(f"GUS login attempt: URL={url}")
+            logger.info(f"GUS API key (first 5 chars): {self.gus_api_key[:5]}...")
             response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
+            logger.info(f"GUS login response status: {response.status_code}")
+            logger.info(f"GUS login response body: {response.text[:500]}")
             response.raise_for_status()
 
             root = ElementTree.fromstring(response.text)
             for elem in root.iter():
                 if "ZalogujResult" in elem.tag:
                     self._gus_session_id = elem.text
+                    logger.info(f"GUS session ID: {self._gus_session_id}")
                     return bool(self._gus_session_id)
+            logger.error("GUS login: no ZalogujResult found in response")
             return False
 
         except Exception as e:
