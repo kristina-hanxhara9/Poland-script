@@ -259,7 +259,7 @@ class PolandAPIClient:
         try:
             response = requests.get(
                 f"{KRS_API_BASE}/OdpisAktualny/{krs_number}",
-                headers={"Accept": "application/json"}, timeout=30,
+                headers={"Accept": "application/json"}, timeout=30, verify=False,
             )
             if response.status_code == 404:
                 return None
