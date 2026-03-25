@@ -195,7 +195,7 @@ def main():
             bigrams[f"{words[i]} {words[i+1]}"] += 1
 
     kw_list = []
-    for word, count in all_keywords.most_common(100):
+    for word, count in all_keywords.most_common(10):
         kw_list.append({
             "keyword": word,
             "count": count,
@@ -273,11 +273,100 @@ def main():
         df_pkd_dist.to_excel(writer, sheet_name="PKD Main Distribution", index=False)
         if not df_all_pkd.empty:
             df_all_pkd.to_excel(writer, sheet_name="All PKD Codes", index=False)
-        df_keywords.to_excel(writer, sheet_name="Name Keywords Top100", index=False)
+        df_keywords.to_excel(writer, sheet_name="Name Keywords Top10", index=False)
         if not df_bigrams.empty:
             df_bigrams.to_excel(writer, sheet_name="Name Keyword Pairs", index=False)
         if not df_pkd_kw.empty:
             df_pkd_kw.to_excel(writer, sheet_name="Keywords per PKD", index=False)
+
+    # ========================================
+    # ADD CHARTS
+    # ========================================
+    logger.info("Adding charts...")
+    from openpyxl import load_workbook
+    from openpyxl.chart import BarChart, PieChart, Reference
+
+    wb = load_workbook(args.output)
+
+    # --- Chart 1: Top 15 PKD Main Codes (bar chart) ---
+    ws_pkd = wb["PKD Main Distribution"]
+    chart_rows = min(len(df_pkd_dist), 15)
+
+    bar1 = BarChart()
+    bar1.type = "col"
+    bar1.title = "Top 15 PKD Main Codes"
+    bar1.x_axis.title = "PKD Code"
+    bar1.y_axis.title = "Count"
+    bar1.style = 10
+    bar1.width = 25
+    bar1.height = 14
+
+    data_ref = Reference(ws_pkd, min_col=2, min_row=1, max_row=chart_rows + 1)
+    cats_ref = Reference(ws_pkd, min_col=1, min_row=2, max_row=chart_rows + 1)
+    bar1.add_data(data_ref, titles_from_data=True)
+    bar1.set_categories(cats_ref)
+    bar1.shape = 4
+    ws_pkd.add_chart(bar1, f"A{len(df_pkd_dist) + 4}")
+
+    # --- Chart 2: PKD Main Distribution (pie chart, top 10) ---
+    pie1 = PieChart()
+    pie1.title = "PKD Main Code Distribution (Top 10)"
+    pie1.style = 10
+    pie1.width = 20
+    pie1.height = 14
+
+    pie_rows = min(len(df_pkd_dist), 10)
+    pie_data = Reference(ws_pkd, min_col=2, min_row=1, max_row=pie_rows + 1)
+    pie_cats = Reference(ws_pkd, min_col=1, min_row=2, max_row=pie_rows + 1)
+    pie1.add_data(pie_data, titles_from_data=True)
+    pie1.set_categories(pie_cats)
+    ws_pkd.add_chart(pie1, f"J{len(df_pkd_dist) + 4}")
+
+    # --- Chart 3: Top 10 Keywords (bar chart) ---
+    ws_kw = wb["Name Keywords Top10"]
+    kw_rows = min(len(df_keywords), 10)
+
+    bar2 = BarChart()
+    bar2.type = "col"
+    bar2.title = "Top 10 Keywords in Business Names"
+    bar2.x_axis.title = "Keyword"
+    bar2.y_axis.title = "Count"
+    bar2.style = 10
+    bar2.width = 20
+    bar2.height = 14
+
+    kw_data = Reference(ws_kw, min_col=2, min_row=1, max_row=kw_rows + 1)
+    kw_cats = Reference(ws_kw, min_col=1, min_row=2, max_row=kw_rows + 1)
+    bar2.add_data(kw_data, titles_from_data=True)
+    bar2.set_categories(kw_cats)
+    bar2.shape = 4
+    ws_kw.add_chart(bar2, f"A{len(df_keywords) + 4}")
+
+    # --- Chart 4: PKD Coverage pie (has PKD vs no PKD) ---
+    ws_summary = wb["Summary"]
+    pie2 = PieChart()
+    pie2.title = "PKD Data Coverage"
+    pie2.style = 10
+    pie2.width = 16
+    pie2.height = 12
+
+    # Write mini table for the pie chart
+    start_row = len(summary_rows) + 4
+    ws_summary.cell(row=start_row, column=1, value="Category")
+    ws_summary.cell(row=start_row, column=2, value="Count")
+    ws_summary.cell(row=start_row + 1, column=1, value="With PKD")
+    ws_summary.cell(row=start_row + 1, column=2, value=has_pkd)
+    ws_summary.cell(row=start_row + 2, column=1, value="Without PKD")
+    ws_summary.cell(row=start_row + 2, column=2, value=no_pkd)
+
+    cov_data = Reference(ws_summary, min_col=2, min_row=start_row, max_row=start_row + 2)
+    cov_cats = Reference(ws_summary, min_col=1, min_row=start_row + 1, max_row=start_row + 2)
+    pie2.add_data(cov_data, titles_from_data=True)
+    pie2.set_categories(cov_cats)
+    ws_summary.add_chart(pie2, f"D2")
+
+    wb.save(args.output)
+    logger.info("Charts added.")
 
     # Print summary to console
     print("\n" + "=" * 60)
@@ -293,8 +382,8 @@ def main():
         desc_str = f" - {desc}" if desc else ""
         print(f"  {i+1:2d}. {row['pkd_code']:12s}  {row['count']:4d} ({row['percentage']}%){desc_str}")
 
-    print(f"\n--- TOP 20 KEYWORDS IN BUSINESS NAMES ---")
-    for i, row in enumerate(kw_list[:20]):
+    print(f"\n--- TOP 10 KEYWORDS IN BUSINESS NAMES ---")
+    for i, row in enumerate(kw_list[:10]):
         print(f"  {i+1:2d}. {row['keyword']:20s}  {row['count']:4d} ({row['percentage']}%)")
 
     if bigram_list:
