@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 # API endpoints
 CEIDG_API_BASE = "https://dane.biznes.gov.pl/api/ceidg/v2"
 KRS_API_BASE = "https://api-krs.ms.gov.pl/api/krs"
-GUS_SANDBOX_URL = "https://wyszukiwarkaregontest.stat.gov.pl/wsBIR/UslugaBIRzworku.svc"
-GUS_PRODUCTION_URL = "https://wyszukiwarkaregon.stat.gov.pl/wsBIR/UslugaBIRzworku.svc"
+GUS_SANDBOX_URL = "https://wyszukiwarkaregontest.stat.gov.pl/wsBIR/UslugaBIRzewnPubl.svc"
+GUS_PRODUCTION_URL = "https://wyszukiwarkaregon.stat.gov.pl/wsBIR/UslugaBIRzewnPubl.svc"
 GUS_SANDBOX_KEY = "abcde12345abcde12345"
 
 # Rate limiting: CEIDG allows 50 requests per 3 minutes
@@ -360,7 +360,7 @@ class PolandAPIClient:
                        xmlns:ns="http://CIS/BIR/PUBL/2014/07">
             <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
                 <wsa:To>{url}</wsa:To>
-                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzworku/Zaloguj</wsa:Action>
+                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/Zaloguj</wsa:Action>
             </soap:Header>
             <soap:Body>
                 <ns:Zaloguj>
@@ -411,7 +411,7 @@ class PolandAPIClient:
                        xmlns:ns="http://CIS/BIR/PUBL/2014/07">
             <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
                 <wsa:To>{url}</wsa:To>
-                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzworku/DanePobierzPelnyRaport</wsa:Action>
+                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DanePobierzPelnyRaport</wsa:Action>
             </soap:Header>
             <soap:Body>
                 <ns:DanePobierzPelnyRaport>
@@ -460,7 +460,7 @@ class PolandAPIClient:
                        xmlns:dat="http://CIS/BIR/PUBL/2014/07/DataContract">
             <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
                 <wsa:To>{url}</wsa:To>
-                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzworku/DaneSzukajPodmioty</wsa:Action>
+                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DaneSzukajPodmioty</wsa:Action>
             </soap:Header>
             <soap:Body>
                 <ns:DaneSzukajPodmioty>
@@ -573,7 +573,7 @@ class PolandAPIClient:
                        xmlns:dat="http://CIS/BIR/PUBL/2014/07/DataContract">
             <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
                 <wsa:To>{url}</wsa:To>
-                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzworku/DaneSzukajPodmioty</wsa:Action>
+                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DaneSzukajPodmioty</wsa:Action>
             </soap:Header>
             <soap:Body>
                 <ns:DaneSzukajPodmioty>
