@@ -233,13 +233,30 @@ def main():
         logger.info(f"[{idx + 1}/{len(work)}] Searching: '{name}' (zip: {input_zip})")
 
         results = api_client.search_gus_by_name(name)
+        logger.info(f"  Full name search returned {len(results)} results")
 
-        # If no results, try with simplified name (first 2-3 words, no legal form)
+        # If no results, try with simplified name (remove legal form)
         if not results:
             simplified = simplify_name(name)
             if simplified != name.lower().strip():
-                logger.info(f"  Retrying with simplified name: '{simplified}'")
+                logger.info(f"  Retrying without legal form: '{simplified}'")
                 results = api_client.search_gus_by_name(simplified)
+                logger.info(f"  Simplified search returned {len(results)} results")
+
+        # If still no results, try searching word by word (longest first)
+        if not results:
+            words = name.strip().split()
+            if len(words) > 1:
+                # Try first N words, decreasing
+                for n in range(len(words), 0, -1):
+                    partial = " ".join(words[:n])
+                    if len(partial) < 3:
+                        continue
+                    logger.info(f"  Retrying with partial name: '{partial}'")
+                    results = api_client.search_gus_by_name(partial)
+                    if results:
+                        logger.info(f"  Partial search returned {len(results)} results")
+                        break
 
         if not results:
             not_found += 1
