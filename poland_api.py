@@ -81,8 +81,8 @@ class PolandAPIClient:
     """Client for Poland government business APIs."""
 
     def __init__(self, ceidg_api_key=None, gus_api_key=None, use_sandbox=False):
-        self.ceidg_api_key = ceidg_api_key or os.environ.get("CEIDG_API_KEY")
-        self.gus_api_key = gus_api_key or os.environ.get("GUS_API_KEY")
+        self.ceidg_api_key = (ceidg_api_key or os.environ.get("CEIDG_API_KEY", "")).strip().strip('"').strip("'")
+        self.gus_api_key = (gus_api_key or os.environ.get("GUS_API_KEY", "")).strip().strip('"').strip("'")
         self.use_sandbox = use_sandbox
         self._last_ceidg_request = 0
         self._last_krs_request = 0
@@ -375,8 +375,8 @@ class PolandAPIClient:
 
         try:
             logger.info(f"GUS login attempt: URL={url}")
-            logger.info(f"GUS API key (first 5 chars): {self.gus_api_key[:5]}...")
-            response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
+            logger.info(f"GUS API key (first 5 chars): {self.gus_api_key[:5]}... (len={len(self.gus_api_key)})")
+            response = requests.post(url, data=envelope.encode("utf-8"), headers=headers, timeout=30, verify=False)
             logger.info(f"GUS login response status: {response.status_code}")
             logger.info(f"GUS login response body: {response.text[:500]}")
             response.raise_for_status()
@@ -437,7 +437,7 @@ class PolandAPIClient:
         }
 
         try:
-            response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
+            response = requests.post(url, data=envelope.encode("utf-8"), headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
             root = ElementTree.fromstring(response.text)
@@ -489,7 +489,7 @@ class PolandAPIClient:
         }
 
         try:
-            response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
+            response = requests.post(url, data=envelope.encode("utf-8"), headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
             root = ElementTree.fromstring(response.text)
@@ -604,7 +604,7 @@ class PolandAPIClient:
         }
 
         try:
-            response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
+            response = requests.post(url, data=envelope.encode("utf-8"), headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
             results = []
