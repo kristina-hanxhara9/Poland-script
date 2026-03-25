@@ -8,6 +8,7 @@ Supports:
 """
 
 import os
+import re
 import time
 import logging
 import warnings
@@ -26,6 +27,25 @@ KRS_API_BASE = "https://api-krs.ms.gov.pl/api/krs"
 GUS_SANDBOX_URL = "https://wyszukiwarkaregontest.stat.gov.pl/wsBIR/UslugaBIRzewnPubl.svc"
 GUS_PRODUCTION_URL = "https://wyszukiwarkaregon.stat.gov.pl/wsBIR/UslugaBIRzewnPubl.svc"
 GUS_SANDBOX_KEY = "abcde12345abcde12345"
+
+
+def _extract_soap_xml(response_text):
+    """
+    Extract SOAP XML from a response that may be MTOM/XOP multipart.
+
+    GUS API returns MTOM format — the actual SOAP XML is buried inside
+    a MIME multipart body. This extracts the <s:Envelope> or <soap:Envelope>.
+    """
+    # Try to find SOAP envelope in the response
+    match = re.search(r'(<s:Envelope[^>]*>.*?</s:Envelope>)', response_text, re.DOTALL)
+    if match:
+        return match.group(1)
+    match = re.search(r'(<soap:Envelope[^>]*>.*?</soap:Envelope>)', response_text, re.DOTALL)
+    if match:
+        return match.group(1)
+    # If no envelope found, return as-is (maybe it's already plain XML)
+    return response_text
+
 
 # Rate limiting: CEIDG allows 50 requests per 3 minutes
 CEIDG_RATE_LIMIT_DELAY = 3.6  # seconds between requests (conservative)
@@ -381,7 +401,7 @@ class PolandAPIClient:
             logger.info(f"GUS login response body: {response.text[:500]}")
             response.raise_for_status()
 
-            root = ElementTree.fromstring(response.text)
+            root = ElementTree.fromstring(_extract_soap_xml(response.text))
             for elem in root.iter():
                 if "ZalogujResult" in elem.tag:
                     self._gus_session_id = elem.text
@@ -440,7 +460,7 @@ class PolandAPIClient:
             response = requests.post(url, data=envelope.encode("utf-8"), headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
-            root = ElementTree.fromstring(response.text)
+            root = ElementTree.fromstring(_extract_soap_xml(response.text))
             for elem in root.iter():
                 if "DanePobierzPelnyRaportResult" in elem.tag and elem.text:
                     inner = ElementTree.fromstring(elem.text)
@@ -492,7 +512,7 @@ class PolandAPIClient:
             response = requests.post(url, data=envelope.encode("utf-8"), headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
-            root = ElementTree.fromstring(response.text)
+            root = ElementTree.fromstring(_extract_soap_xml(response.text))
 
             for elem in root.iter():
                 if "DaneSzukajPodmiotyResult" in elem.tag and elem.text:
@@ -608,7 +628,7 @@ class PolandAPIClient:
             response.raise_for_status()
 
             results = []
-            root = ElementTree.fromstring(response.text)
+            root = ElementTree.fromstring(_extract_soap_xml(response.text))
 
             for elem in root.iter():
                 if "DaneSzukajPodmiotyResult" in elem.tag and elem.text:
