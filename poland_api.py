@@ -355,19 +355,21 @@ class PolandAPIClient:
 
         url = GUS_SANDBOX_URL if self.use_sandbox else GUS_PRODUCTION_URL
 
-        envelope = f"""<?xml version="1.0" encoding="utf-8"?>
-        <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
-                       xmlns:ns="http://CIS/BIR/PUBL/2014/07">
-            <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
-                <wsa:To>{url}</wsa:To>
-                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/Zaloguj</wsa:Action>
-            </soap:Header>
-            <soap:Body>
-                <ns:Zaloguj>
-                    <ns:pKluczUzytkownika>{self.gus_api_key}</ns:pKluczUzytkownika>
-                </ns:Zaloguj>
-            </soap:Body>
-        </soap:Envelope>"""
+        envelope = (
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"'
+            ' xmlns:ns="http://CIS/BIR/PUBL/2014/07">'
+            '<soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">'
+            f'<wsa:To>{url}</wsa:To>'
+            '<wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/Zaloguj</wsa:Action>'
+            '</soap:Header>'
+            '<soap:Body>'
+            '<ns:Zaloguj>'
+            f'<ns:pKluczUzytkownika>{self.gus_api_key}</ns:pKluczUzytkownika>'
+            '</ns:Zaloguj>'
+            '</soap:Body>'
+            '</soap:Envelope>'
+        )
 
         headers = {"Content-Type": "application/soap+xml; charset=utf-8"}
 
@@ -412,20 +414,22 @@ class PolandAPIClient:
         else:
             return {}
 
-        envelope = f"""<?xml version="1.0" encoding="utf-8"?>
-        <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
-                       xmlns:ns="http://CIS/BIR/PUBL/2014/07">
-            <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
-                <wsa:To>{url}</wsa:To>
-                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DanePobierzPelnyRaport</wsa:Action>
-            </soap:Header>
-            <soap:Body>
-                <ns:DanePobierzPelnyRaport>
-                    <ns:pRegon>{regon}</ns:pRegon>
-                    <ns:pNazwaRaportu>{report_name}</ns:pNazwaRaportu>
-                </ns:DanePobierzPelnyRaport>
-            </soap:Body>
-        </soap:Envelope>"""
+        envelope = (
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"'
+            ' xmlns:ns="http://CIS/BIR/PUBL/2014/07">'
+            '<soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">'
+            f'<wsa:To>{url}</wsa:To>'
+            '<wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DanePobierzPelnyRaport</wsa:Action>'
+            '</soap:Header>'
+            '<soap:Body>'
+            '<ns:DanePobierzPelnyRaport>'
+            f'<ns:pRegon>{regon}</ns:pRegon>'
+            f'<ns:pNazwaRaportu>{report_name}</ns:pNazwaRaportu>'
+            '</ns:DanePobierzPelnyRaport>'
+            '</soap:Body>'
+            '</soap:Envelope>'
+        )
 
         headers = {
             "Content-Type": "application/soap+xml; charset=utf-8",
@@ -460,22 +464,24 @@ class PolandAPIClient:
 
         url = GUS_SANDBOX_URL if self.use_sandbox else GUS_PRODUCTION_URL
 
-        envelope = f"""<?xml version="1.0" encoding="utf-8"?>
-        <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
-                       xmlns:ns="http://CIS/BIR/PUBL/2014/07"
-                       xmlns:dat="http://CIS/BIR/PUBL/2014/07/DataContract">
-            <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
-                <wsa:To>{url}</wsa:To>
-                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DaneSzukajPodmioty</wsa:Action>
-            </soap:Header>
-            <soap:Body>
-                <ns:DaneSzukajPodmioty>
-                    <ns:pParametryWyszukiwania>
-                        <dat:Nip>{nip}</dat:Nip>
-                    </ns:pParametryWyszukiwania>
-                </ns:DaneSzukajPodmioty>
-            </soap:Body>
-        </soap:Envelope>"""
+        envelope = (
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"'
+            ' xmlns:ns="http://CIS/BIR/PUBL/2014/07"'
+            ' xmlns:dat="http://CIS/BIR/PUBL/2014/07/DataContract">'
+            '<soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">'
+            f'<wsa:To>{url}</wsa:To>'
+            '<wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DaneSzukajPodmioty</wsa:Action>'
+            '</soap:Header>'
+            '<soap:Body>'
+            '<ns:DaneSzukajPodmioty>'
+            '<ns:pParametryWyszukiwania>'
+            f'<dat:Nip>{nip}</dat:Nip>'
+            '</ns:pParametryWyszukiwania>'
+            '</ns:DaneSzukajPodmioty>'
+            '</soap:Body>'
+            '</soap:Envelope>'
+        )
 
         headers = {
             "Content-Type": "application/soap+xml; charset=utf-8",
@@ -573,22 +579,24 @@ class PolandAPIClient:
 
         url = GUS_SANDBOX_URL if self.use_sandbox else GUS_PRODUCTION_URL
 
-        envelope = f"""<?xml version="1.0" encoding="utf-8"?>
-        <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
-                       xmlns:ns="http://CIS/BIR/PUBL/2014/07"
-                       xmlns:dat="http://CIS/BIR/PUBL/2014/07/DataContract">
-            <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
-                <wsa:To>{url}</wsa:To>
-                <wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DaneSzukajPodmioty</wsa:Action>
-            </soap:Header>
-            <soap:Body>
-                <ns:DaneSzukajPodmioty>
-                    <ns:pParametryWyszukiwania>
-                        <dat:Nazwa>{name}</dat:Nazwa>
-                    </ns:pParametryWyszukiwania>
-                </ns:DaneSzukajPodmioty>
-            </soap:Body>
-        </soap:Envelope>"""
+        envelope = (
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"'
+            ' xmlns:ns="http://CIS/BIR/PUBL/2014/07"'
+            ' xmlns:dat="http://CIS/BIR/PUBL/2014/07/DataContract">'
+            '<soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">'
+            f'<wsa:To>{url}</wsa:To>'
+            '<wsa:Action>http://CIS/BIR/PUBL/2014/07/IUslugaBIRzewnPubl/DaneSzukajPodmioty</wsa:Action>'
+            '</soap:Header>'
+            '<soap:Body>'
+            '<ns:DaneSzukajPodmioty>'
+            '<ns:pParametryWyszukiwania>'
+            f'<dat:Nazwa>{name}</dat:Nazwa>'
+            '</ns:pParametryWyszukiwania>'
+            '</ns:DaneSzukajPodmioty>'
+            '</soap:Body>'
+            '</soap:Envelope>'
+        )
 
         headers = {
             "Content-Type": "application/soap+xml; charset=utf-8",
