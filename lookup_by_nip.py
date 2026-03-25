@@ -113,6 +113,10 @@ def main():
         "--gus-key", help="GUS API key (or set GUS_API_KEY env var)",
     )
     parser.add_argument(
+        "--limit", "-n", type=int, default=0,
+        help="Only process first N rows (for testing). 0 = all rows.",
+    )
+    parser.add_argument(
         "--sandbox", action="store_true",
         help="Use GUS sandbox (test data, no real key needed)",
     )
@@ -133,6 +137,11 @@ def main():
 
     # Filter out empty NIPs
     valid_nips = [(i, n) for i, n in enumerate(nips) if n]
+
+    if args.limit > 0:
+        valid_nips = valid_nips[:args.limit]
+        logger.info(f"Limited to first {args.limit} rows for testing.")
+
     logger.info(f"Valid NIP codes: {len(valid_nips)} / {len(nips)}")
 
     if not valid_nips:
