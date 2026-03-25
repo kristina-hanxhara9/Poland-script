@@ -426,17 +426,10 @@ class PolandAPIClient:
             logger.error(f"GUS search error: {e}")
             return None
 
-    def _gus_full_report(self, regon, entity_type):
-        """Fetch a full report from GUS for a given REGON."""
+    def _gus_fetch_report(self, regon, report_name):
+        """Fetch a single report from GUS for a given REGON. Returns list of dane dicts."""
         if not self._gus_session_id or not regon:
-            return {}
-
-        if entity_type == "F":
-            report_name = "BIR11OsFizycznaDzworkczosc"
-        elif entity_type == "P":
-            report_name = "BIR11OsPrawna"
-        else:
-            return {}
+            return []
 
         envelope = (
             '<?xml version="1.0" encoding="utf-8"?>'
@@ -457,15 +450,48 @@ class PolandAPIClient:
 
         try:
             root = _gus_soap_request(self._gus_url, envelope, self._gus_session_id)
+            results = []
             for elem in root.iter():
                 if "DanePobierzPelnyRaportResult" in elem.tag and elem.text:
                     inner = ElementTree.fromstring(elem.text)
                     for dane in inner.iter("dane"):
-                        return {child.tag: (child.text or "").strip() for child in dane}
-            return {}
+                        results.append({child.tag: (child.text or "").strip() for child in dane})
+            return results
         except Exception as e:
-            logger.debug(f"GUS full report error for REGON {regon}: {e}")
+            logger.info(f"GUS report '{report_name}' error for REGON {regon}: {e}")
+            return []
+
+    def _gus_full_report(self, regon, entity_type):
+        """Fetch full entity report from GUS."""
+        # Correct report names for BIR 1.1
+        if entity_type == "F":
+            report_name = "BIR11OsFizycznaDaneOgolne"
+        elif entity_type == "P":
+            report_name = "BIR11OsPrawna"
+        else:
             return {}
+
+        results = self._gus_fetch_report(regon, report_name)
+        return results[0] if results else {}
+
+    def _gus_pkd_report(self, regon, entity_type):
+        """Fetch PKD codes from GUS dedicated PKD report."""
+        if entity_type == "F":
+            report_name = "BIR11OsFizycznaPkd"
+        elif entity_type == "P":
+            report_name = "BIR11OsPrawnaPkd"
+        else:
+            return []
+
+        results = self._gus_fetch_report(regon, report_name)
+        pkd_codes = []
+        for item in results:
+            # PKD report returns one row per code
+            code = item.get("fiz_pkd_Kod", "") or item.get("praw_pkdKod", "") or item.get("Kod", "")
+            is_main = item.get("fiz_pkd_Przewazajace", "") == "1" or item.get("praw_pkdPrzewazajace", "") == "1" or item.get("Przewazajace", "") == "1"
+            if code:
+                pkd_codes.append({"code": code, "is_main": is_main})
+        return pkd_codes
 
     def _parse_gus_dane(self, dane):
         """Parse a single <dane> element from GUS search results."""
@@ -519,11 +545,25 @@ class PolandAPIClient:
         if result["pkd_main"]:
             result["pkd_codes"].append(result["pkd_main"])
 
-        # Enrich with full report (email, phone, website, extra PKD)
+        # Enrich with full report (email, phone, website)
         if regon and entity_type in ("F", "P"):
             full = self._gus_full_report(regon, entity_type)
             if full:
                 self._enrich_from_gus_report(result, full, entity_type)
+
+            # Fetch PKD codes from dedicated PKD report
+            pkd_list = self._gus_pkd_report(regon, entity_type)
+            if pkd_list:
+                for pkd in pkd_list:
+                    code = pkd["code"]
+                    if code not in result["pkd_codes"]:
+                        result["pkd_codes"].append(code)
+                    if pkd["is_main"]:
+                        result["pkd_main"] = code
+                # If we still have no main, use first code
+                if not result["pkd_main"] and result["pkd_codes"]:
+                    result["pkd_main"] = result["pkd_codes"][0]
+                logger.info(f"  PKD codes: {result['pkd_codes']} (main: {result['pkd_main']})")
 
         return result
 
