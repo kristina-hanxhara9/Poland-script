@@ -10,16 +10,21 @@ Supports:
 import os
 import time
 import logging
+import warnings
 import requests
+import urllib3
 from xml.etree import ElementTree
+
+# Suppress SSL warnings for GUS API (known certificate chain issues)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
 # API endpoints
 CEIDG_API_BASE = "https://dane.biznes.gov.pl/api/ceidg/v2"
 KRS_API_BASE = "https://api-krs.ms.gov.pl/api/krs"
-GUS_SANDBOX_URL = "https://wyszukiwarkaregon.stat.gov.pl/wsBIR/UslugaBIRzworku.svc"
-GUS_PRODUCTION_URL = "https://wyszukiwarkaregontest.stat.gov.pl/wsBIR/UslugaBIRzworku.svc"
+GUS_SANDBOX_URL = "https://wyszukiwarkaregontest.stat.gov.pl/wsBIR/UslugaBIRzworku.svc"
+GUS_PRODUCTION_URL = "https://wyszukiwarkaregon.stat.gov.pl/wsBIR/UslugaBIRzworku.svc"
 GUS_SANDBOX_KEY = "abcde12345abcde12345"
 
 # Rate limiting: CEIDG allows 50 requests per 3 minutes
@@ -367,7 +372,7 @@ class PolandAPIClient:
         headers = {"Content-Type": "application/soap+xml; charset=utf-8"}
 
         try:
-            response = requests.post(url, data=envelope, headers=headers, timeout=30)
+            response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
             root = ElementTree.fromstring(response.text)
@@ -422,7 +427,7 @@ class PolandAPIClient:
         }
 
         try:
-            response = requests.post(url, data=envelope, headers=headers, timeout=30)
+            response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
             root = ElementTree.fromstring(response.text)
@@ -472,7 +477,7 @@ class PolandAPIClient:
         }
 
         try:
-            response = requests.post(url, data=envelope, headers=headers, timeout=30)
+            response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
             root = ElementTree.fromstring(response.text)
@@ -585,7 +590,7 @@ class PolandAPIClient:
         }
 
         try:
-            response = requests.post(url, data=envelope, headers=headers, timeout=30)
+            response = requests.post(url, data=envelope, headers=headers, timeout=30, verify=False)
             response.raise_for_status()
 
             results = []
