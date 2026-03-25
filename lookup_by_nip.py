@@ -17,7 +17,10 @@ import logging
 import sys
 import time
 
+from dotenv import load_dotenv
 import pandas as pd
+
+load_dotenv()
 
 from poland_api import PolandAPIClient
 
