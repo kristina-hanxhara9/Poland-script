@@ -80,6 +80,60 @@ def normalize_zip(z):
     return s
 
 
+def simplify_name(name):
+    """Remove Polish legal form suffixes from a business name."""
+    name = name.lower().strip()
+    for suffix in [
+        " sp. z o.o. sp. k.", " sp. z o.o. sp.k.",
+        " sp. z o.o.", " sp.z o.o.", " spółka z o.o.", " spolka z o.o.",
+        " sp. z o. o.", " s.a.", " sp.j.", " sp.k.", " sp. komandytowa",
+        " spółka jawna", " spolka jawna", " spółka akcyjna", " spolka akcyjna",
+        " s.c.", " sp. cywilna", " spółka cywilna", " spolka cywilna",
+        " z o.o.", " z.o.o.",
+    ]:
+        if name.endswith(suffix):
+            name = name[:-len(suffix)].strip()
+            break
+    name = name.strip('"\'').strip()
+    return name
+
+
+def search_by_name_fuzzy(api_client, name):
+    """Search GUS by name with progressive fallbacks. Returns list of results."""
+    if not name:
+        return []
+
+    # 1. Full exact name
+    results = api_client.search_gus_by_name(name)
+    if results:
+        logger.info(f"  Found {len(results)} results with full name")
+        return results
+
+    # 2. Without legal form suffix
+    simplified = simplify_name(name)
+    if simplified != name.lower().strip():
+        logger.info(f"  Retrying without legal form: '{simplified}'")
+        results = api_client.search_gus_by_name(simplified)
+        if results:
+            logger.info(f"  Found {len(results)} results with simplified name")
+            return results
+
+    # 3. Progressive word removal (longest to shortest)
+    words = name.strip().split()
+    if len(words) > 1:
+        for n in range(len(words) - 1, 0, -1):
+            partial = " ".join(words[:n])
+            if len(partial) < 3:
+                continue
+            logger.info(f"  Retrying with partial: '{partial}'")
+            results = api_client.search_gus_by_name(partial)
+            if results:
+                logger.info(f"  Found {len(results)} results with partial name")
+                return results
+
+    return []
+
+
 def build_row(input_name, input_zip, input_street, result, search_method, match_status):
     pkd_codes = result.get("pkd_codes", [])
     api_descs = result.get("pkd_descriptions", {})
@@ -162,7 +216,7 @@ def main():
         if street.lower() in ("nan", "none", ""):
             street = ""
         norm = normalize_zip(zip_code)
-        if norm or street:
+        if norm or street or name:
             work.append((i, name, zip_code, street))
 
     if args.limit > 0:
@@ -227,6 +281,15 @@ def main():
                 found_results = street_results
                 search_method = "STREET_SEARCH"
 
+        # Strategy 3: Fallback to fuzzy name search
+        if not found_results and name:
+            logger.info(f"  ZIP+STREET failed -> Searching GUS by name: {name}")
+            stats["names_searched"] = stats.get("names_searched", 0) + 1
+            name_results = search_by_name_fuzzy(api_client, name)
+            if name_results:
+                found_results = name_results
+                search_method = "NAME_SEARCH"
+
         if found_results:
             stats["businesses_found"] += len(found_results)
             for r in found_results:
@@ -235,7 +298,12 @@ def main():
                     if krs_data:
                         r = api_client._merge_results(r, krs_data)
 
-                match_label = f"FOUND BY ZIP ({input_zip})" if search_method == "ZIP_SEARCH" else f"FOUND BY STREET ({input_street})"
+                if search_method == "ZIP_SEARCH":
+                    match_label = f"FOUND BY ZIP ({input_zip})"
+                elif search_method == "STREET_SEARCH":
+                    match_label = f"FOUND BY STREET ({input_street})"
+                else:
+                    match_label = f"FOUND BY NAME ({name})"
                 rows.append(build_row(
                     name, input_zip, input_street, r,
                     search_method, match_label
@@ -262,6 +330,7 @@ def main():
     logger.info(f"DONE  |  Total input rows: {len(work)}")
     logger.info(f"  Unique zips searched:    {stats['zips_searched']}")
     logger.info(f"  Unique streets searched: {stats['streets_searched']}")
+    logger.info(f"  Names searched (fuzzy):  {stats.get('names_searched', 0)}")
     logger.info(f"  Businesses found:        {stats['businesses_found']}")
     logger.info(f"  Not found:               {stats['not_found']}")
     logger.info(f"Results: {args.output}")
