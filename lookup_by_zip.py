@@ -2,12 +2,9 @@
 """
 Look up Polish businesses by zip code using GUS API.
 
-Reads an Excel file (same format as lookup_combined.py):
-  Column A = NIP/tax ID (empty for these rows)
-  Column B = Business name (for reference)
-  Column C = Zip code (used for search)
-
-Only processes rows where column A (NIP) is empty.
+Reads an Excel file:
+  Column A = Business name (for reference)
+  Column B = Zip code (used for search)
 
 Usage:
     python lookup_by_zip.py input.xlsx --output zip_results.xlsx --limit 2
@@ -125,7 +122,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Look up Polish businesses by zip code via GUS API."
     )
-    parser.add_argument("input_file", help="Excel file: col A = NIP (empty), col B = name, col C = zip")
+    parser.add_argument("input_file", help="Excel file: col A = name, col B = zip")
     parser.add_argument("--output", "-o", default="zip_results.xlsx", help="Output Excel file")
     parser.add_argument("--gus-key", help="GUS API key (or set GUS_API_KEY env var)")
     parser.add_argument("--limit", "-n", type=int, default=0, help="Only process first N rows. 0 = all.")
@@ -140,24 +137,17 @@ def main():
         logger.error(f"File not found: {args.input_file}")
         sys.exit(1)
 
-    if len(df_in.columns) < 3:
-        logger.error("Need 3 columns: A = NIP/tax ID, B = name, C = zip code.")
+    if len(df_in.columns) < 2:
+        logger.error("Need at least 2 columns: A = name, B = zip code.")
         sys.exit(1)
 
-    nip_col = df_in.columns[0]
-    name_col = df_in.columns[1]
-    zip_col = df_in.columns[2]
-    logger.info(f"Columns: NIP='{nip_col}', Name='{name_col}', Zip='{zip_col}'")
+    name_col = df_in.columns[0]
+    zip_col = df_in.columns[1]
+    logger.info(f"Columns: Name='{name_col}', Zip='{zip_col}'")
 
-    # Build work list — only rows where NIP (col A) is empty
+    # Build work list
     work = []
-    skipped = 0
     for i, row in df_in.iterrows():
-        nip_raw = str(row[nip_col]).strip().replace("-", "").replace(" ", "")
-        if nip_raw.lower() not in ("nan", "none", "") and nip_raw.isdigit():
-            skipped += 1
-            continue  # Skip rows that have a NIP — they were already found
-
         name = str(row[name_col]).strip()
         zip_code = str(row[zip_col]).strip()
         if name.lower() in ("nan", "none", ""):
@@ -167,9 +157,6 @@ def main():
         norm = normalize_zip(zip_code)
         if norm:
             work.append((i, name, zip_code))
-
-    logger.info(f"Skipped {skipped} rows with NIP (already have tax ID)")
-    logger.info(f"Rows with empty NIP and valid zip: {len(work)}")
 
     if args.limit > 0:
         work = work[:args.limit]
