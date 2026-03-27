@@ -665,6 +665,46 @@ class PolandAPIClient:
         logger.info(f"  GUS zip search '{formatted_zip}': found {len(all_results)} unique businesses")
         return all_results[:max_results]
 
+    def search_gus_by_street(self, street, max_results=10):
+        """Search GUS by street name. Returns list of result dicts."""
+        street = street.strip()
+        if not street:
+            return []
+
+        all_results = []
+        seen_regons = set()
+
+        # GUS requires a name param alongside street — use single-letter prefixes
+        search_terms = ["P", "S", "A", "M", "K", "B", "F", "Z", "W", "T"]
+
+        for term in search_terms:
+            params_xml = (
+                f'<dat:Nazwa>{term}</dat:Nazwa>'
+                f'<dat:Ulica>{street}</dat:Ulica>'
+            )
+            root = self._gus_search(params_xml)
+            if root is None:
+                continue
+
+            try:
+                for elem in root.iter():
+                    if "DaneSzukajPodmiotyResult" in elem.tag and elem.text:
+                        inner = ElementTree.fromstring(elem.text)
+                        for dane in inner.iter("dane"):
+                            regon = self._get_xml_text(dane, "Regon")
+                            if regon and regon not in seen_regons:
+                                seen_regons.add(regon)
+                                result = self._parse_gus_dane(dane)
+                                all_results.append(result)
+            except Exception as e:
+                logger.error(f"GUS street search error for '{street}' term '{term}': {e}")
+
+            if len(all_results) >= max_results:
+                break
+
+        logger.info(f"  GUS street search '{street}': found {len(all_results)} unique businesses")
+        return all_results[:max_results]
+
     def _enrich_from_gus_report(self, result, report, entity_type):
         """Enrich a result dict with data from a GUS full report."""
         if entity_type == "P":

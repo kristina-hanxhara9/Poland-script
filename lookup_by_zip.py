@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Look up Polish businesses by zip code using GUS API.
+Look up Polish businesses by zip code (then street as fallback) using GUS API.
 
 Reads an Excel file:
   Column A = Business name (for reference)
-  Column B = Zip code (used for search)
+  Column B = Zip code (primary search)
+  Column C = Street (fallback if zip returns nothing)
 
 Usage:
     python lookup_by_zip.py input.xlsx --output zip_results.xlsx --limit 2
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 OUTPUT_COLUMNS = [
     "input_name",
     "input_zip",
+    "input_street",
     "search_method",
     "match_status",
     "api_name",
@@ -78,7 +80,7 @@ def normalize_zip(z):
     return s
 
 
-def build_row(input_name, input_zip, result, search_method, match_status):
+def build_row(input_name, input_zip, input_street, result, search_method, match_status):
     pkd_codes = result.get("pkd_codes", [])
     api_descs = result.get("pkd_descriptions", {})
     pkd_descs = [api_descs.get(c, "") or get_pkd_description(c) for c in pkd_codes]
@@ -86,6 +88,7 @@ def build_row(input_name, input_zip, result, search_method, match_status):
     return {
         "input_name": input_name,
         "input_zip": input_zip,
+        "input_street": input_street,
         "search_method": search_method,
         "match_status": match_status,
         "api_name": result.get("name", ""),
@@ -122,7 +125,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Look up Polish businesses by zip code via GUS API."
     )
-    parser.add_argument("input_file", help="Excel file: col A = name, col B = zip")
+    parser.add_argument("input_file", help="Excel file: col A = name, col B = zip, col C = street")
     parser.add_argument("--output", "-o", default="zip_results.xlsx", help="Output Excel file")
     parser.add_argument("--gus-key", help="GUS API key (or set GUS_API_KEY env var)")
     parser.add_argument("--limit", "-n", type=int, default=0, help="Only process first N rows. 0 = all.")
@@ -143,29 +146,33 @@ def main():
 
     name_col = df_in.columns[0]
     zip_col = df_in.columns[1]
-    logger.info(f"Columns: Name='{name_col}', Zip='{zip_col}'")
+    street_col = df_in.columns[2] if len(df_in.columns) >= 3 else None
+    logger.info(f"Columns: Name='{name_col}', Zip='{zip_col}', Street='{street_col}'")
 
     # Build work list
     work = []
     for i, row in df_in.iterrows():
         name = str(row[name_col]).strip()
         zip_code = str(row[zip_col]).strip()
+        street = str(row[street_col]).strip() if street_col else ""
         if name.lower() in ("nan", "none", ""):
             name = ""
         if zip_code.lower() in ("nan", "none"):
             zip_code = ""
+        if street.lower() in ("nan", "none", ""):
+            street = ""
         norm = normalize_zip(zip_code)
-        if norm:
-            work.append((i, name, zip_code))
+        if norm or street:
+            work.append((i, name, zip_code, street))
 
     if args.limit > 0:
         work = work[:args.limit]
         logger.info(f"Limited to first {args.limit} rows.")
 
-    logger.info(f"Rows with valid zip codes: {len(work)}")
+    logger.info(f"Rows to process: {len(work)}")
 
     if not work:
-        logger.error("No rows with valid zip codes found.")
+        logger.error("No rows with valid zip or street found.")
         sys.exit(1)
 
     # Set up API client
@@ -176,50 +183,74 @@ def main():
 
     logger.info("GUS API key configured.")
 
-    # Process — search by zip, cache results per unique zip
+    # Process — search by zip first, then street as fallback
     rows = []
     searched_zips = {}
-    stats = {"zips_searched": 0, "businesses_found": 0, "empty_zips": 0}
+    searched_streets = {}
+    stats = {"zips_searched": 0, "streets_searched": 0, "businesses_found": 0, "not_found": 0}
 
-    for idx, (orig_idx, name, input_zip) in enumerate(work):
-        logger.info(f"[{idx + 1}/{len(work)}] Name: '{name}' | Zip: {input_zip}")
+    for idx, (orig_idx, name, input_zip, input_street) in enumerate(work):
+        logger.info(f"[{idx + 1}/{len(work)}] Name: '{name}' | Zip: {input_zip} | Street: {input_street}")
 
+        found_results = []
+        search_method = ""
+
+        # Strategy 1: Search by zip code
         norm_zip = normalize_zip(input_zip)
+        if norm_zip:
+            if norm_zip not in searched_zips:
+                stats["zips_searched"] += 1
+                logger.info(f"  Searching GUS by zip: {input_zip}")
+                zip_results = api_client.search_gus_by_zip(input_zip, max_results=args.max_per_zip)
+                searched_zips[norm_zip] = zip_results
+            else:
+                zip_results = searched_zips[norm_zip]
+                logger.info(f"  Using cached results for zip {input_zip} ({len(zip_results)} businesses)")
 
-        # Use cached results if we already searched this zip
-        if norm_zip not in searched_zips:
-            stats["zips_searched"] += 1
-            logger.info(f"  Searching GUS by zip: {input_zip}")
-            zip_results = api_client.search_gus_by_zip(input_zip, max_results=args.max_per_zip)
-            searched_zips[norm_zip] = zip_results
-        else:
-            zip_results = searched_zips[norm_zip]
-            logger.info(f"  Using cached results for zip {input_zip} ({len(zip_results)} businesses)")
+            if zip_results:
+                found_results = zip_results
+                search_method = "ZIP_SEARCH"
 
-        if zip_results:
-            stats["businesses_found"] += len(zip_results)
-            for r in zip_results:
-                # Enrich with KRS if available
+        # Strategy 2: Fallback to street search if zip returned nothing
+        if not found_results and input_street:
+            street_key = input_street.lower()
+            if street_key not in searched_streets:
+                stats["streets_searched"] += 1
+                logger.info(f"  ZIP empty/no results -> Searching GUS by street: {input_street}")
+                street_results = api_client.search_gus_by_street(input_street, max_results=args.max_per_zip)
+                searched_streets[street_key] = street_results
+            else:
+                street_results = searched_streets[street_key]
+                logger.info(f"  Using cached results for street '{input_street}' ({len(street_results)} businesses)")
+
+            if street_results:
+                found_results = street_results
+                search_method = "STREET_SEARCH"
+
+        if found_results:
+            stats["businesses_found"] += len(found_results)
+            for r in found_results:
                 if r.get("krs"):
                     krs_data = api_client.search_krs(r["krs"])
                     if krs_data:
                         r = api_client._merge_results(r, krs_data)
 
+                match_label = f"FOUND BY ZIP ({input_zip})" if search_method == "ZIP_SEARCH" else f"FOUND BY STREET ({input_street})"
                 rows.append(build_row(
-                    name, input_zip, r,
-                    "ZIP_SEARCH",
-                    f"FOUND BY ZIP ({input_zip})"
+                    name, input_zip, input_street, r,
+                    search_method, match_label
                 ))
-            logger.info(f"  -> Found {len(zip_results)} businesses at zip {input_zip}")
+            logger.info(f"  -> Found {len(found_results)} businesses via {search_method}")
         else:
-            stats["empty_zips"] += 1
+            stats["not_found"] += 1
             rows.append({
                 "input_name": name,
                 "input_zip": input_zip,
-                "search_method": "ZIP_SEARCH",
-                "match_status": "NO BUSINESSES AT ZIP",
+                "input_street": input_street,
+                "search_method": "ZIP+STREET",
+                "match_status": "NOT FOUND",
             })
-            logger.info(f"  -> No businesses found at zip {input_zip}")
+            logger.info(f"  -> No businesses found by zip or street")
 
     # Output
     df_out = pd.DataFrame(rows, columns=OUTPUT_COLUMNS).fillna("")
@@ -229,9 +260,10 @@ def main():
 
     logger.info("=" * 55)
     logger.info(f"DONE  |  Total input rows: {len(work)}")
-    logger.info(f"  Unique zips searched:   {stats['zips_searched']}")
-    logger.info(f"  Businesses found:       {stats['businesses_found']}")
-    logger.info(f"  Empty zips (no results):{stats['empty_zips']}")
+    logger.info(f"  Unique zips searched:    {stats['zips_searched']}")
+    logger.info(f"  Unique streets searched: {stats['streets_searched']}")
+    logger.info(f"  Businesses found:        {stats['businesses_found']}")
+    logger.info(f"  Not found:               {stats['not_found']}")
     logger.info(f"Results: {args.output}")
 
 
