@@ -613,6 +613,58 @@ class PolandAPIClient:
             logger.error(f"GUS name search error for '{name}': {e}")
             return []
 
+    def search_gus_by_zip(self, zip_code, max_results=10):
+        """Search GUS by postal code. Returns list of result dicts.
+
+        Uses the Miejscowosc/KodPocztowy parameters combined with a wildcard-like
+        name search. GUS doesn't support zip-only search, so we search with
+        common Polish business prefixes to find entities at that postal code.
+        """
+        # Normalize zip: remove dash if present (GUS expects XX-XXX format)
+        z = zip_code.strip().replace("-", "").replace(" ", "")
+        if len(z) == 5:
+            formatted_zip = f"{z[:2]}-{z[2:]}"
+        else:
+            formatted_zip = zip_code.strip()
+
+        # Try searching with zip + common prefixes to find businesses
+        all_results = []
+        seen_regons = set()
+
+        # Strategy: search with short common business name prefixes
+        # GUS requires a name param, so we use very common Polish words
+        search_terms = ["*"]  # Try wildcard first
+        if not all_results:
+            search_terms = ["P", "S", "A", "M", "K", "B", "F", "Z", "W", "T"]
+
+        for term in search_terms:
+            params_xml = (
+                f'<dat:Nazwa>{term}</dat:Nazwa>'
+                f'<dat:KodPocztowy>{formatted_zip}</dat:KodPocztowy>'
+            )
+            root = self._gus_search(params_xml)
+            if root is None:
+                continue
+
+            try:
+                for elem in root.iter():
+                    if "DaneSzukajPodmiotyResult" in elem.tag and elem.text:
+                        inner = ElementTree.fromstring(elem.text)
+                        for dane in inner.iter("dane"):
+                            regon = self._get_xml_text(dane, "Regon")
+                            if regon and regon not in seen_regons:
+                                seen_regons.add(regon)
+                                result = self._parse_gus_dane(dane)
+                                all_results.append(result)
+            except Exception as e:
+                logger.error(f"GUS zip search error for '{formatted_zip}' term '{term}': {e}")
+
+            if len(all_results) >= max_results:
+                break
+
+        logger.info(f"  GUS zip search '{formatted_zip}': found {len(all_results)} unique businesses")
+        return all_results[:max_results]
+
     def _enrich_from_gus_report(self, result, report, entity_type):
         """Enrich a result dict with data from a GUS full report."""
         if entity_type == "P":

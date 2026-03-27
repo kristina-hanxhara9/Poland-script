@@ -276,7 +276,9 @@ def main():
 
     # Process
     rows = []
-    stats = {"nip_found": 0, "name_match": 0, "name_zip_diff": 0, "not_found": 0}
+    zip_fallback_rows = []  # For sheet2: businesses found by zip-only search
+    not_found_entries = []  # Track entries that need zip fallback
+    stats = {"nip_found": 0, "name_match": 0, "name_zip_diff": 0, "not_found": 0, "zip_fallback": 0}
 
     for idx, (orig_idx, nip, name, input_zip) in enumerate(work):
         logger.info(f"[{idx + 1}/{len(work)}] NIP: {nip or '(empty)'} | Name: {name} | Zip: {input_zip}")
@@ -335,7 +337,7 @@ def main():
                 logger.info(f"  -> {best.get('name', '?')} | {match_status}")
                 continue
 
-        # --- Nothing found ---
+        # --- Nothing found — queue for zip fallback ---
         stats["not_found"] += 1
         rows.append({
             "input_nip": nip,
@@ -346,12 +348,64 @@ def main():
             "zip_match": "",
         })
         logger.info(f"  -> NOT FOUND")
+        # Remember for zip fallback
+        if input_zip and normalize_zip(input_zip):
+            not_found_entries.append((nip, name, input_zip))
+
+    # --- Strategy 3: Zip-code fallback for NOT FOUND entries ---
+    if not_found_entries:
+        logger.info(f"\n{'='*55}")
+        logger.info(f"ZIP FALLBACK: Searching by zip code for {len(not_found_entries)} not-found entries...")
+        logger.info(f"{'='*55}")
+
+        searched_zips = {}  # cache: zip -> results list
+
+        for nip, name, input_zip in not_found_entries:
+            norm_zip = normalize_zip(input_zip)
+            if not norm_zip:
+                continue
+
+            # Use cached results if we already searched this zip
+            if norm_zip not in searched_zips:
+                logger.info(f"  Searching GUS by zip: {input_zip}")
+                zip_results = api_client.search_gus_by_zip(input_zip)
+                searched_zips[norm_zip] = zip_results
+            else:
+                zip_results = searched_zips[norm_zip]
+                logger.info(f"  Using cached zip results for: {input_zip} ({len(zip_results)} businesses)")
+
+            if zip_results:
+                stats["zip_fallback"] += 1
+                for r in zip_results:
+                    r = enrich_with_krs(api_client, r)
+                    zip_fallback_rows.append(build_row(
+                        nip, name, input_zip, r,
+                        "ZIP_FALLBACK",
+                        f"FOUND BY ZIP ({input_zip})",
+                        "ZIP SEARCH"
+                    ))
+                logger.info(f"  -> Found {len(zip_results)} businesses at zip {input_zip} for '{name}'")
+            else:
+                logger.info(f"  -> No businesses found at zip {input_zip}")
 
     # Output
     df_out = pd.DataFrame(rows, columns=OUTPUT_COLUMNS).fillna("")
 
     logger.info(f"Saving to {args.output}")
-    df_out.to_excel(args.output, index=False)
+
+    with pd.ExcelWriter(args.output, engine="openpyxl") as writer:
+        # Sheet 1: Main results
+        df_out.to_excel(writer, sheet_name="Results", index=False)
+
+        # Sheet 2: Zip fallback results (businesses found by zip code)
+        if zip_fallback_rows:
+            df_zip = pd.DataFrame(zip_fallback_rows, columns=OUTPUT_COLUMNS).fillna("")
+            df_zip.to_excel(writer, sheet_name="Zip Fallback Results", index=False)
+            logger.info(f"  Sheet 'Zip Fallback Results': {len(zip_fallback_rows)} rows from zip search")
+        else:
+            pd.DataFrame({"result": ["No zip fallback results"]}).to_excel(
+                writer, sheet_name="Zip Fallback Results", index=False
+            )
 
     logger.info("=" * 55)
     logger.info(f"DONE  |  Total: {len(work)}")
@@ -359,6 +413,7 @@ def main():
     logger.info(f"  Found by name (zip match): {stats['name_match']}")
     logger.info(f"  Found by name (zip diff):  {stats['name_zip_diff']}")
     logger.info(f"  Not found:                 {stats['not_found']}")
+    logger.info(f"  Zip fallback (entries):    {stats['zip_fallback']}")
     logger.info(f"Results: {args.output}")
 
 
