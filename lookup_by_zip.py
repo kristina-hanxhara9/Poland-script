@@ -98,6 +98,57 @@ def simplify_name(name):
     return name
 
 
+def search_name_with_zip(api_client, name, zip_code):
+    """Search GUS combining name + zip code. Returns first results found."""
+    if not name:
+        return []
+
+    # Normalize zip
+    z = zip_code.strip().replace("-", "").replace(" ", "")
+    if len(z) == 5:
+        formatted_zip = f"{z[:2]}-{z[2:]}"
+    else:
+        formatted_zip = zip_code.strip()
+
+    # Try progressively looser name variants with the zip
+    name_variants = [name]
+    simplified = simplify_name(name)
+    if simplified != name.lower().strip():
+        name_variants.append(simplified)
+    # Also try individual words (2+ chars)
+    words = name.strip().split()
+    if len(words) > 1:
+        for n in range(len(words) - 1, 0, -1):
+            partial = " ".join(words[:n])
+            if len(partial) >= 3:
+                name_variants.append(partial)
+
+    for variant in name_variants:
+        logger.info(f"  Name+zip: '{variant}' + {formatted_zip}")
+        params_xml = (
+            f'<dat:Nazwa>{variant}</dat:Nazwa>'
+            f'<dat:KodPocztowy>{formatted_zip}</dat:KodPocztowy>'
+        )
+        root = api_client._gus_search(params_xml)
+        if root is None:
+            continue
+        try:
+            from xml.etree import ElementTree
+            for elem in root.iter():
+                if "DaneSzukajPodmiotyResult" in elem.tag and elem.text:
+                    inner = ElementTree.fromstring(elem.text)
+                    results = []
+                    for dane in inner.iter("dane"):
+                        results.append(api_client._parse_gus_dane(dane))
+                    if results:
+                        logger.info(f"  Found {len(results)} with name+zip variant '{variant}'")
+                        return results
+        except Exception as e:
+            logger.error(f"  Name+zip search error: {e}")
+
+    return []
+
+
 def search_by_name_fuzzy(api_client, name):
     """Search GUS by name with progressive fallbacks. Returns list of results."""
     if not name:
@@ -249,46 +300,51 @@ def main():
         found_results = []
         search_method = ""
 
-        # Strategy 1: Search by zip code
         norm_zip = normalize_zip(input_zip)
-        if norm_zip:
-            if norm_zip not in searched_zips:
-                stats["zips_searched"] += 1
-                logger.info(f"  Searching GUS by zip: {input_zip}")
-                zip_results = api_client.search_gus_by_zip(input_zip, max_results=args.max_per_zip)
-                searched_zips[norm_zip] = zip_results
-            else:
-                zip_results = searched_zips[norm_zip]
-                logger.info(f"  Using cached results for zip {input_zip} ({len(zip_results)} businesses)")
 
-            if zip_results:
-                found_results = zip_results
-                search_method = "ZIP_SEARCH"
+        # Strategy 1: Name + zip combined (best chance)
+        if name and norm_zip:
+            logger.info(f"  Trying name+zip combined search")
+            name_zip_results = search_name_with_zip(api_client, name, input_zip)
+            if name_zip_results:
+                found_results = name_zip_results[:args.max_per_zip]
+                search_method = "NAME+ZIP"
 
-        # Strategy 2: Fallback to street search if zip returned nothing
+        # Strategy 2: Fuzzy name search (no zip filter)
+        if not found_results and name:
+            logger.info(f"  Trying fuzzy name search: {name}")
+            stats["names_searched"] = stats.get("names_searched", 0) + 1
+            name_results = search_by_name_fuzzy(api_client, name)
+            if name_results:
+                found_results = name_results[:args.max_per_zip]
+                search_method = "NAME_SEARCH"
+
+        # Strategy 3: Street search
         if not found_results and input_street:
             street_key = input_street.lower()
             if street_key not in searched_streets:
                 stats["streets_searched"] += 1
-                logger.info(f"  ZIP empty/no results -> Searching GUS by street: {input_street}")
+                logger.info(f"  Trying street search: {input_street}")
                 street_results = api_client.search_gus_by_street(input_street, max_results=args.max_per_zip)
                 searched_streets[street_key] = street_results
             else:
                 street_results = searched_streets[street_key]
-                logger.info(f"  Using cached results for street '{input_street}' ({len(street_results)} businesses)")
-
             if street_results:
                 found_results = street_results
                 search_method = "STREET_SEARCH"
 
-        # Strategy 3: Fallback to fuzzy name search
-        if not found_results and name:
-            logger.info(f"  ZIP+STREET failed -> Searching GUS by name: {name}")
-            stats["names_searched"] = stats.get("names_searched", 0) + 1
-            name_results = search_by_name_fuzzy(api_client, name)
-            if name_results:
-                found_results = name_results
-                search_method = "NAME_SEARCH"
+        # Strategy 4: Zip-only search
+        if not found_results and norm_zip:
+            if norm_zip not in searched_zips:
+                stats["zips_searched"] += 1
+                logger.info(f"  Trying zip-only search: {input_zip}")
+                zip_results = api_client.search_gus_by_zip(input_zip, max_results=args.max_per_zip)
+                searched_zips[norm_zip] = zip_results
+            else:
+                zip_results = searched_zips[norm_zip]
+            if zip_results:
+                found_results = zip_results
+                search_method = "ZIP_SEARCH"
 
         if found_results:
             stats["businesses_found"] += len(found_results)
@@ -298,12 +354,14 @@ def main():
                     if krs_data:
                         r = api_client._merge_results(r, krs_data)
 
-                if search_method == "ZIP_SEARCH":
-                    match_label = f"FOUND BY ZIP ({input_zip})"
+                if search_method == "NAME+ZIP":
+                    match_label = f"FOUND BY NAME+ZIP ({name} / {input_zip})"
+                elif search_method == "NAME_SEARCH":
+                    match_label = f"FOUND BY NAME ({name})"
                 elif search_method == "STREET_SEARCH":
                     match_label = f"FOUND BY STREET ({input_street})"
                 else:
-                    match_label = f"FOUND BY NAME ({name})"
+                    match_label = f"FOUND BY ZIP ({input_zip})"
                 rows.append(build_row(
                     name, input_zip, input_street, r,
                     search_method, match_label
