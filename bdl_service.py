@@ -457,6 +457,17 @@ def get_rich_estimate(pkd_code, company_info=None):
         adjustments.append(f"age_adj: {age_years:.0f}y -> x{age_mult:.2f}")
     adjusted *= age_mult
 
+    # C) Market trends adjustment (inflation + sector trend + GDP)
+    from market_trends import get_market_adjustment
+    market_mult, market_details = get_market_adjustment(section, data_year)
+    if market_mult != 1.0:
+        adjustments.append(
+            f"market: inflation x{market_details['inflation_mult']:.3f}, "
+            f"sector x{market_details['sector_trend_mult']:.3f}, "
+            f"GDP x{market_details['gdp_mult']:.3f} = x{market_mult:.4f}"
+        )
+    adjusted *= market_mult
+
     # Step 5: Confidence range
     low_spread, high_spread = CONFIDENCE_SPREADS.get(size_band, (0.50, 1.80))
     low_est = adjusted * low_spread
@@ -500,6 +511,14 @@ def get_rich_estimate(pkd_code, company_info=None):
         "division_share": round(div_share * 100, 2) if div_share else None,
         "capital_multiplier": round(capital_multiplier, 2),
         "age_multiplier": round(age_mult, 2),
+        "market_multiplier": round(market_mult, 4),
+        "inflation_multiplier": round(market_details.get("inflation_mult", 1), 3),
+        "sector_trend_multiplier": round(market_details.get("sector_trend_mult", 1), 3),
+        "gdp_multiplier": round(market_details.get("gdp_mult", 1), 3),
+        "sector_growth_pct": market_details.get("sector_growth_pct"),
+        "gdp_growth_pct": market_details.get("gdp_growth_pct"),
+        "eur_pln_rate": market_details.get("eur_pln_now"),
+        "eur_pln_change_pct": market_details.get("eur_pln_change_pct"),
         "adjustments_applied": "; ".join(adjustments) if adjustments else "none",
         "data_year": data_year,
         "monthly_wage_zl": wage_data.get("value_zl"),
