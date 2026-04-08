@@ -155,6 +155,7 @@ DIY_CHAINS = [
     {"name": "Magnat (farby)", "search_names": ["MAGNAT", "FFiL SNIEZKA"], "category": "DIY"},
     {"name": "Polbruk", "search_names": ["POLBRUK"], "category": "DIY"},
     {"name": "Styropmin (insulation)", "search_names": ["STYROPMIN"], "category": "DIY"},
+    {"name": "Centrobud", "search_names": ["CENTROBUD"], "category": "DIY"},
 ]
 
 MOBILE_CHAINS = [
@@ -212,10 +213,14 @@ MOBILE_CHAINS = [
     {"name": "Komputronik", "search_names": ["Komputronik", "KOMPUTRONIK"], "category": "Mobile"},
     {"name": "Morele.net", "search_names": ["Morele.net", "MORELE NET", "MORELE"], "category": "Mobile"},
     {"name": "al.to (x-kom group)", "search_names": ["AL.TO", "ALTO"], "category": "Mobile"},
-    {"name": "Sferis", "search_names": ["SFERIS"], "category": "Mobile"},
-    {"name": "Vobis", "search_names": ["VOBIS"], "category": "Mobile"},
-    {"name": "iSource (Apple reseller)", "search_names": ["ISOURCE"], "category": "Mobile"},
+    {"name": "Sferis (Action)", "search_names": ["SFERIS"], "category": "Mobile"},
+    {"name": "Vobis (i-Terra)", "search_names": ["VOBIS", "I-TERRA"], "category": "Mobile"},
+    {"name": "Proline", "search_names": ["PROLINE"], "category": "Mobile"},
+    {"name": "Neo24", "search_names": ["NEO24"], "category": "Mobile"},
+    {"name": "AMSO Komputery", "search_names": ["AMSO"], "category": "Mobile"},
+    {"name": "iSpot (Apple Premium Reseller)", "search_names": ["ISPOT"], "category": "Mobile"},
     {"name": "Cortland (Apple reseller)", "search_names": ["CORTLAND"], "category": "Mobile"},
+    {"name": "iMad (Apple)", "search_names": ["IMAD"], "category": "Mobile"},
 
     # ─── Phone manufacturer official stores ──────────────────────────────
     {"name": "Samsung Polska", "search_names": ["Samsung Electronics Polska", "SAMSUNG ELECTRONICS POLSKA"], "category": "Mobile"},
@@ -229,6 +234,9 @@ MOBILE_CHAINS = [
     {"name": "realme Polska", "search_names": ["REALME POLSKA", "REALME"], "category": "Mobile"},
     {"name": "Honor Polska", "search_names": ["HONOR POLSKA", "HONOR"], "category": "Mobile"},
     {"name": "Google Polska", "search_names": ["GOOGLE POLAND", "GOOGLE POLSKA"], "category": "Mobile"},
+    {"name": "ASBIS Polska (Samsung/iSpace stores)", "search_names": ["ASBIS POLSKA", "ASBIS"], "category": "Mobile"},
+    {"name": "Mi-Home.pl (Xiaomi stores)", "search_names": ["MI-HOME", "MI HOME"], "category": "Mobile"},
+    {"name": "MiMarkt (Xiaomi)", "search_names": ["MIMARKT"], "category": "Mobile"},
 
     # ─── Phone / IT distributors / wholesalers ───────────────────────────
     {"name": "ABC Data", "search_names": ["ABC DATA"], "category": "Mobile"},
@@ -243,7 +251,11 @@ MOBILE_CHAINS = [
     # ─── Phone accessories / repair / Polish brands ──────────────────────
     {"name": "GSM Service", "search_names": ["GSM SERVICE"], "category": "Mobile"},
     {"name": "Teletorium", "search_names": ["TELETORIUM"], "category": "Mobile"},
-    {"name": "MyPhone (Mobiway)", "search_names": ["MYPHONE", "MOBIWAY"], "category": "Mobile"},
+    {"name": "Teleakces.com", "search_names": ["TELEAKCES"], "category": "Mobile"},
+    {"name": "CCS (Cyfrowe Centrum Serwisowe)", "search_names": ["CYFROWE CENTRUM SERWISOWE", "CCS"], "category": "Mobile"},
+    {"name": "Cordon Electronics (sbe-online)", "search_names": ["CORDON ELECTRONICS"], "category": "Mobile"},
+    {"name": "MyPhone / mPTech (Polish brand)", "search_names": ["MPTECH", "MYPHONE"], "category": "Mobile"},
+    {"name": "Hammer (mPTech rugged phones)", "search_names": ["HAMMER MPTECH"], "category": "Mobile"},
     {"name": "Maxcom (Polish brand)", "search_names": ["MAXCOM"], "category": "Mobile"},
     {"name": "Kruger&Matz", "search_names": ["KRUGER MATZ", "KRUGER"], "category": "Mobile"},
 
@@ -257,6 +269,7 @@ MOBILE_CHAINS = [
     {"name": "Carrefour Polska", "search_names": ["CARREFOUR POLSKA"], "category": "Mobile"},
     {"name": "Kaufland Polska", "search_names": ["KAUFLAND POLSKA"], "category": "Mobile"},
     {"name": "E.Leclerc Polska", "search_names": ["E.LECLERC", "LECLERC POLSKA"], "category": "Mobile"},
+    {"name": "Cyfrowy Polsat (Grupa Polsat Plus)", "search_names": ["CYFROWY POLSAT"], "category": "Mobile"},
 ]
 
 OUTPUT_COLUMNS = [
