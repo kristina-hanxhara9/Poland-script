@@ -42,7 +42,8 @@ DIY_CHAINS = [
     {"name": "Jula Poland", "search_names": ["JULA POLAND", "JULA"], "category": "DIY"},
     {"name": "Würth Polska", "search_names": ["Wurth Polska", "WURTH POLSKA"], "category": "DIY"},
     {"name": "Hilti Polska", "search_names": ["Hilti Polska", "HILTI POLSKA"], "category": "DIY"},
-    {"name": "Bauhaus (if present)", "search_names": ["BAUHAUS POLSKA", "BAUHAUS"], "category": "DIY"},
+    {"name": "MR.DIY Polska", "search_names": ["MR.DIY", "MRDIY", "MR DIY POLSKA"], "category": "DIY"},
+    {"name": "Flügger Polska", "search_names": ["FLUGGER", "FLUGGER POLSKA"], "category": "DIY"},
 
     # ─── Polish DIY / building materials chains ──────────────────────────
     {"name": "Grupa PSB (Mrówka, Profi)", "search_names": ["GRUPA PSB", "PSB HANDEL", "PSB Mrowka"], "category": "DIY"},
@@ -54,6 +55,22 @@ DIY_CHAINS = [
     {"name": "Merkury Market", "search_names": ["Merkury Market", "MERKURY MARKET"], "category": "DIY"},
     {"name": "Budokop", "search_names": ["BUDOKOP"], "category": "DIY"},
     {"name": "Mat-Bud", "search_names": ["MAT-BUD", "MATBUD"], "category": "DIY"},
+
+    # ─── Purchasing groups / franchise networks ──────────────────────────
+    {"name": "Grupa Handlo-Budowa (GHB)", "search_names": ["GRUPA HANDLO-BUDOWA", "GHB"], "category": "DIY"},
+    {"name": "Majster Budowlane ABC", "search_names": ["MAJSTER BUDOWLANE ABC"], "category": "DIY"},
+    {"name": "Pszczółka (Grupa Majster)", "search_names": ["PSZCZOLKA", "INVEST DEVELOPMENT"], "category": "DIY"},
+    {"name": "Sieć Budowlana", "search_names": ["SIEC BUDOWLANA"], "category": "DIY"},
+    {"name": "3W Dystrybucja Budowlana", "search_names": ["3W DYSTRYBUCJA"], "category": "DIY"},
+    {"name": "Grupa PHMB", "search_names": ["POLSKIE HURTOWNIE MATERIALOW BUDOWLANYCH", "PHMB"], "category": "DIY"},
+    {"name": "BIMS Plus (Abex)", "search_names": ["BIMS PLUS", "ABEX"], "category": "DIY"},
+    {"name": "Grupa ABG", "search_names": ["GRUPA ABG"], "category": "DIY"},
+    {"name": "Hadex (Grupa PHMB)", "search_names": ["HADEX"], "category": "DIY"},
+
+    # ─── Professional distributors ───────────────────────────────────────
+    {"name": "Saint-Gobain Dystrybucja (Raab Karcher)", "search_names": ["SAINT-GOBAIN POLSKA", "RAAB KARCHER"], "category": "DIY"},
+    {"name": "Onninen Polska (Kesko)", "search_names": ["ONNINEN"], "category": "DIY"},
+    {"name": "Enexon (ex-Elektroskandia)", "search_names": ["ENEXON"], "category": "DIY"},
 
     # ─── Building materials wholesalers / distributors ───────────────────
     {"name": "Grupa Polskie Składy Budowlane", "search_names": ["POLSKIE SKLADY BUDOWLANE"], "category": "DIY"},
@@ -116,12 +133,20 @@ DIY_CHAINS = [
 
     # ─── Furniture / home (with DIY sections) ────────────────────────────
     {"name": "IKEA Polska", "search_names": ["IKEA RETAIL", "IKEA POLSKA", "INGKA"], "category": "DIY"},
+    {"name": "Jysk Polska", "search_names": ["JYSK"], "category": "DIY"},
     {"name": "Agata Meble", "search_names": ["AGATA", "AGATA MEBLE"], "category": "DIY"},
     {"name": "Black Red White", "search_names": ["BLACK RED WHITE", "BRW"], "category": "DIY"},
     {"name": "VOX Meble", "search_names": ["VOX INDUSTRIE", "VOX MEBLE"], "category": "DIY"},
     {"name": "Abra Meble", "search_names": ["ABRA", "ABRA MEBLE"], "category": "DIY"},
     {"name": "Bodzio Meble", "search_names": ["BODZIO", "FABRYKA MEBLI BODZIO"], "category": "DIY"},
     {"name": "Forte Meble", "search_names": ["FORTE", "FABRYKA MEBLI FORTE"], "category": "DIY"},
+    {"name": "Sklepy Komfort (Sołowow)", "search_names": ["SKLEPY KOMFORT"], "category": "DIY"},
+
+    # ─── Discount/variety with DIY overlap ───────────────────────────────
+    {"name": "Action Polska", "search_names": ["ACTION POLSKA", "ACTION S.A. DISCOUNT"], "category": "DIY"},
+    {"name": "Pepco Polska", "search_names": ["PEPCO POLAND"], "category": "DIY"},
+    {"name": "TEDi Polska", "search_names": ["TEDI"], "category": "DIY"},
+    {"name": "Dealz (Pepco Group)", "search_names": ["DEALZ"], "category": "DIY"},
 
     # ─── Regional / smaller DIY ──────────────────────────────────────────
     {"name": "Marma Polskie Folie", "search_names": ["MARMA POLSKIE FOLIE"], "category": "DIY"},
@@ -159,14 +184,28 @@ MOBILE_CHAINS = [
     {"name": "a2mobile", "search_names": ["A2MOBILE"], "category": "Mobile"},
     {"name": "Tuya Mobile", "search_names": ["TUYA"], "category": "Mobile"},
 
+    # ─── Additional MVNOs ──────────────────────────────────────────────
+    {"name": "Mobile Vikings", "search_names": ["MOBILE VIKINGS"], "category": "Mobile"},
+    {"name": "Vectra Mobile", "search_names": ["VECTRA MOBILE"], "category": "Mobile"},
+    {"name": "FM GROUP Mobile", "search_names": ["FM GROUP MOBILE", "FM GROUP"], "category": "Mobile"},
+    {"name": "Otvarta", "search_names": ["OTVARTA"], "category": "Mobile"},
+    {"name": "Sat Film", "search_names": ["SAT FILM"], "category": "Mobile"},
+    {"name": "Fonia Telekom", "search_names": ["FONIA TELEKOM"], "category": "Mobile"},
+    {"name": "Multimedia Polska", "search_names": ["MULTIMEDIA POLSKA"], "category": "Mobile"},
+    {"name": "Canal+ Polska (nc+ Mobile)", "search_names": ["CANAL PLUS POLSKA", "CANAL+"], "category": "Mobile"},
+
     # ─── Major electronics retail chains ─────────────────────────────────
     {"name": "Media Expert (TERG)", "search_names": ["Media Expert", "TERG", "MEDIA EXPERT"], "category": "Mobile"},
     {"name": "Media Markt (MediaMarktSaturn)", "search_names": ["Media Markt", "MEDIA SATURN HOLDING POLSKA", "MEDIAMARKT"], "category": "Mobile"},
     {"name": "RTV Euro AGD (Euro-net)", "search_names": ["Euro AGD", "RTV EURO AGD", "EURO-NET"], "category": "Mobile"},
-    {"name": "Neonet", "search_names": ["NEONET"], "category": "Mobile"},
+    {"name": "Neonet (x-kom group)", "search_names": ["NEONET"], "category": "Mobile"},
+    {"name": "Max Elektro", "search_names": ["MAX ELEKTRO"], "category": "Mobile"},
+    {"name": "Kakto", "search_names": ["KAKTO"], "category": "Mobile"},
+    {"name": "Rebel Electro", "search_names": ["REBEL ELECTRO"], "category": "Mobile"},
     {"name": "Electro (Neonet group)", "search_names": ["ELECTRO"], "category": "Mobile"},
     {"name": "Avans", "search_names": ["AVANS"], "category": "Mobile"},
     {"name": "Mix Electronics", "search_names": ["MIX ELECTRONICS"], "category": "Mobile"},
+    {"name": "OleOle (Euro-net online)", "search_names": ["OLEOLE", "OLE OLE"], "category": "Mobile"},
 
     # ─── IT / computer / phone specialist chains ─────────────────────────
     {"name": "x-kom", "search_names": ["x-kom", "X-KOM"], "category": "Mobile"},
