@@ -33,68 +33,191 @@ logger = logging.getLogger(__name__)
 # ─── Known Polish retail chains ─────────────────────────────────────────────
 
 DIY_CHAINS = [
-    # Major international chains in Poland
+    # ─── Major international DIY chains in Poland ────────────────────────
     {"name": "Castorama Polska", "search_names": ["Castorama", "CASTORAMA POLSKA"], "category": "DIY"},
     {"name": "Leroy Merlin Polska", "search_names": ["Leroy Merlin", "LEROY MERLIN POLSKA"], "category": "DIY"},
     {"name": "OBI Polska", "search_names": ["OBI", "OBI POLSKA"], "category": "DIY"},
-    {"name": "Bricomarché", "search_names": ["Bricomarche", "BRICOMARCHE"], "category": "DIY"},
+    {"name": "Bricomarché (Grupa Muszkieterów)", "search_names": ["Bricomarche", "BRICOMARCHE", "ITM POLSKA"], "category": "DIY"},
     {"name": "Bricoman Polska", "search_names": ["Bricoman", "BRICOMAN POLSKA"], "category": "DIY"},
+    {"name": "Jula Poland", "search_names": ["JULA POLAND", "JULA"], "category": "DIY"},
+    {"name": "Würth Polska", "search_names": ["Wurth Polska", "WURTH POLSKA"], "category": "DIY"},
+    {"name": "Hilti Polska", "search_names": ["Hilti Polska", "HILTI POLSKA"], "category": "DIY"},
+    {"name": "Bauhaus (if present)", "search_names": ["BAUHAUS POLSKA", "BAUHAUS"], "category": "DIY"},
 
-    # Polish DIY chains
-    {"name": "PSB Mrówka", "search_names": ["PSB Mrowka", "PSB HANDEL", "GRUPA PSB"], "category": "DIY"},
+    # ─── Polish DIY / building materials chains ──────────────────────────
+    {"name": "Grupa PSB (Mrówka, Profi)", "search_names": ["GRUPA PSB", "PSB HANDEL", "PSB Mrowka"], "category": "DIY"},
+    {"name": "PSB Mrówka", "search_names": ["PSB MROWKA", "MROWKA"], "category": "DIY"},
+    {"name": "PSB Profi", "search_names": ["PSB PROFI"], "category": "DIY"},
     {"name": "Nomi", "search_names": ["NOMI"], "category": "DIY"},
-    {"name": "Majster Plus", "search_names": ["Majster Plus", "MAJSTER"], "category": "DIY"},
-    {"name": "Polbruk", "search_names": ["POLBRUK"], "category": "DIY"},
+    {"name": "Majster Plus (Grupa PMB)", "search_names": ["Majster Plus", "MAJSTER", "GRUPA PMB"], "category": "DIY"},
     {"name": "Praktiker Polska", "search_names": ["Praktiker", "PRAKTIKER POLSKA"], "category": "DIY"},
-
-    # Building materials / hardware
     {"name": "Merkury Market", "search_names": ["Merkury Market", "MERKURY MARKET"], "category": "DIY"},
-    {"name": "Abra Meble", "search_names": ["ABRA", "ABRA MEBLE"], "category": "DIY"},
-    {"name": "Jula Poland", "search_names": ["JULA", "JULA POLAND"], "category": "DIY"},
-    {"name": "Würth Polska", "search_names": ["Wurth Polska", "WURTH"], "category": "DIY"},
-    {"name": "Brico Depot", "search_names": ["BRICO DEPOT", "BRICODEPOT"], "category": "DIY"},
+    {"name": "Budokop", "search_names": ["BUDOKOP"], "category": "DIY"},
+    {"name": "Mat-Bud", "search_names": ["MAT-BUD", "MATBUD"], "category": "DIY"},
 
-    # Specialist building/home
-    {"name": "Leroymerlin", "search_names": ["LEROYMERLIN"], "category": "DIY"},
+    # ─── Building materials wholesalers / distributors ───────────────────
+    {"name": "Grupa Polskie Składy Budowlane", "search_names": ["POLSKIE SKLADY BUDOWLANE"], "category": "DIY"},
+    {"name": "AB Bechcicki (Bygma)", "search_names": ["AB BECHCICKI", "BECHCICKI"], "category": "DIY"},
+    {"name": "Grupa Dekpol", "search_names": ["DEKPOL"], "category": "DIY"},
+    {"name": "Grupa Atlas", "search_names": ["ATLAS", "GRUPA ATLAS"], "category": "DIY"},
+    {"name": "Śnieżka (paints)", "search_names": ["SNIEZKA", "FABRYKA FARB SNIEZKA"], "category": "DIY"},
+    {"name": "Dekoral", "search_names": ["DEKORAL", "PPG DECO POLSKA"], "category": "DIY"},
+    {"name": "Selena Group (Tytan)", "search_names": ["SELENA", "SELENA GROUP"], "category": "DIY"},
+    {"name": "SIG Polska (roofing)", "search_names": ["SIG POLSKA", "SIG"], "category": "DIY"},
+    {"name": "Blachy Pruszyński", "search_names": ["BLACHY PRUSZYNSKI", "PRUSZYNSKI"], "category": "DIY"},
+    {"name": "Budmat", "search_names": ["BUDMAT"], "category": "DIY"},
+    {"name": "Fakro (windows/skylights)", "search_names": ["FAKRO"], "category": "DIY"},
+    {"name": "Velux Polska", "search_names": ["VELUX POLSKA", "VELUX"], "category": "DIY"},
+    {"name": "Wiśniowski (garage doors/gates)", "search_names": ["WISNIOWSKI"], "category": "DIY"},
+
+    # ─── Flooring / tiles / bathrooms ────────────────────────────────────
     {"name": "Komfort", "search_names": ["KOMFORT"], "category": "DIY"},
-    {"name": "Atlas", "search_names": ["ATLAS FIRMA"], "category": "DIY"},
-    {"name": "MAT-BUD", "search_names": ["MAT-BUD", "MATBUD"], "category": "DIY"},
-    {"name": "Brico Market", "search_names": ["BRICO MARKET"], "category": "DIY"},
+    {"name": "Cersanit", "search_names": ["CERSANIT"], "category": "DIY"},
+    {"name": "Paradyż (tiles)", "search_names": ["CERAMIKA PARADYZ", "PARADYZ"], "category": "DIY"},
+    {"name": "Tubądzin (tiles)", "search_names": ["TUBADZIN"], "category": "DIY"},
+    {"name": "Opoczno (tiles)", "search_names": ["OPOCZNO", "CERAMIKA OPOCZNO"], "category": "DIY"},
+    {"name": "Deante (bathrooms)", "search_names": ["DEANTE"], "category": "DIY"},
+    {"name": "Sanitec / Koło", "search_names": ["SANITEC KOŁO", "KOLO"], "category": "DIY"},
+    {"name": "Roca Polska", "search_names": ["ROCA POLSKA"], "category": "DIY"},
+    {"name": "Grohe Polska", "search_names": ["GROHE POLSKA", "GROHE"], "category": "DIY"},
+    {"name": "Hansgrohe Polska", "search_names": ["HANSGROHE POLSKA", "HANSGROHE"], "category": "DIY"},
+    {"name": "Baltic Wood (flooring)", "search_names": ["BALTIC WOOD"], "category": "DIY"},
+    {"name": "Barlinek (flooring)", "search_names": ["BARLINEK"], "category": "DIY"},
+    {"name": "Kronopol (panels)", "search_names": ["KRONOPOL", "SWISS KRONO"], "category": "DIY"},
+    {"name": "Classen Polska (panels)", "search_names": ["CLASSEN POLSKA", "CLASSEN"], "category": "DIY"},
+
+    # ─── Garden / outdoor ────────────────────────────────────────────────
+    {"name": "Stihl Polska", "search_names": ["STIHL POLSKA", "STIHL"], "category": "DIY"},
+    {"name": "Husqvarna Polska", "search_names": ["HUSQVARNA POLSKA", "HUSQVARNA"], "category": "DIY"},
+    {"name": "Gardena Polska", "search_names": ["GARDENA POLSKA", "GARDENA"], "category": "DIY"},
+
+    # ─── Tools / power tools distributors ────────────────────────────────
+    {"name": "Bosch Polska (power tools)", "search_names": ["ROBERT BOSCH", "BOSCH POLSKA"], "category": "DIY"},
+    {"name": "Makita Polska", "search_names": ["MAKITA POLSKA", "MAKITA"], "category": "DIY"},
+    {"name": "DeWalt (Stanley Black & Decker)", "search_names": ["STANLEY BLACK DECKER", "DEWALT POLSKA"], "category": "DIY"},
+    {"name": "Milwaukee Tool (TTI)", "search_names": ["TECHTRONIC INDUSTRIES", "MILWAUKEE"], "category": "DIY"},
+    {"name": "Festool Polska", "search_names": ["FESTOOL POLSKA", "FESTOOL"], "category": "DIY"},
+
+    # ─── Heating / HVAC / insulation ─────────────────────────────────────
+    {"name": "Viessmann Polska", "search_names": ["VIESSMANN"], "category": "DIY"},
+    {"name": "Vaillant Polska", "search_names": ["VAILLANT SAUNIER DUVAL"], "category": "DIY"},
+    {"name": "Buderus Polska", "search_names": ["BUDERUS POLSKA", "BUDERUS"], "category": "DIY"},
+    {"name": "Rockwool Polska", "search_names": ["ROCKWOOL POLSKA"], "category": "DIY"},
+    {"name": "Isover (Saint-Gobain)", "search_names": ["SAINT-GOBAIN CONSTRUCTION", "ISOVER"], "category": "DIY"},
+    {"name": "Knauf Polska", "search_names": ["KNAUF", "KNAUF POLSKA"], "category": "DIY"},
+    {"name": "Rigips (Saint-Gobain)", "search_names": ["RIGIPS"], "category": "DIY"},
+
+    # ─── Electrical / lighting chains ────────────────────────────────────
+    {"name": "Elektroskandia Polska", "search_names": ["ELEKTROSKANDIA"], "category": "DIY"},
+    {"name": "TIM SA (electrical wholesaler)", "search_names": ["TIM"], "category": "DIY"},
+    {"name": "Kanlux (lighting)", "search_names": ["KANLUX"], "category": "DIY"},
+    {"name": "Nowodvorski Lighting", "search_names": ["NOWODVORSKI"], "category": "DIY"},
+    {"name": "Philips Lighting Polska", "search_names": ["SIGNIFY POLAND"], "category": "DIY"},
+
+    # ─── Furniture / home (with DIY sections) ────────────────────────────
+    {"name": "IKEA Polska", "search_names": ["IKEA RETAIL", "IKEA POLSKA", "INGKA"], "category": "DIY"},
+    {"name": "Agata Meble", "search_names": ["AGATA", "AGATA MEBLE"], "category": "DIY"},
+    {"name": "Black Red White", "search_names": ["BLACK RED WHITE", "BRW"], "category": "DIY"},
+    {"name": "VOX Meble", "search_names": ["VOX INDUSTRIE", "VOX MEBLE"], "category": "DIY"},
+    {"name": "Abra Meble", "search_names": ["ABRA", "ABRA MEBLE"], "category": "DIY"},
+    {"name": "Bodzio Meble", "search_names": ["BODZIO", "FABRYKA MEBLI BODZIO"], "category": "DIY"},
+    {"name": "Forte Meble", "search_names": ["FORTE", "FABRYKA MEBLI FORTE"], "category": "DIY"},
+
+    # ─── Regional / smaller DIY ──────────────────────────────────────────
+    {"name": "Marma Polskie Folie", "search_names": ["MARMA POLSKIE FOLIE"], "category": "DIY"},
+    {"name": "Grupa SBS (składy budowlane)", "search_names": ["GRUPA SBS", "SBS"], "category": "DIY"},
+    {"name": "Hurtownia Grodno", "search_names": ["GRODNO"], "category": "DIY"},
+    {"name": "Magnat (farby)", "search_names": ["MAGNAT", "FFiL SNIEZKA"], "category": "DIY"},
+    {"name": "Polbruk", "search_names": ["POLBRUK"], "category": "DIY"},
+    {"name": "Styropmin (insulation)", "search_names": ["STYROPMIN"], "category": "DIY"},
 ]
 
 MOBILE_CHAINS = [
-    # Major operators / retailers
+    # ─── Mobile network operators (MNO) with retail stores ───────────────
     {"name": "Orange Polska", "search_names": ["Orange Polska", "ORANGE POLSKA"], "category": "Mobile"},
     {"name": "T-Mobile Polska", "search_names": ["T-Mobile Polska", "T-MOBILE POLSKA"], "category": "Mobile"},
-    {"name": "Play (P4)", "search_names": ["P4 Sp. z o.o.", "P4"], "category": "Mobile"},
+    {"name": "Play (P4 Sp. z o.o.)", "search_names": ["P4 Sp. z o.o.", "P4"], "category": "Mobile"},
     {"name": "Plus (Polkomtel)", "search_names": ["Polkomtel", "POLKOMTEL"], "category": "Mobile"},
     {"name": "Vectra", "search_names": ["VECTRA"], "category": "Mobile"},
+    {"name": "UPC Polska (Play)", "search_names": ["UPC POLSKA"], "category": "Mobile"},
+    {"name": "Netia", "search_names": ["NETIA"], "category": "Mobile"},
+    {"name": "Inea", "search_names": ["INEA"], "category": "Mobile"},
 
-    # Electronics / phone retailers
-    {"name": "Media Expert", "search_names": ["Media Expert", "MEDIA EXPERT", "TERG"], "category": "Mobile"},
-    {"name": "Media Markt", "search_names": ["Media Markt", "MEDIA SATURN", "MEDIAMARKT"], "category": "Mobile"},
-    {"name": "RTV Euro AGD", "search_names": ["Euro AGD", "RTV EURO AGD", "EURO-NET"], "category": "Mobile"},
+    # ─── MVNOs (Virtual operators) ───────────────────────────────────────
+    {"name": "Virgin Mobile Polska", "search_names": ["Virgin Mobile", "VIRGIN MOBILE POLSKA"], "category": "Mobile"},
+    {"name": "Nju Mobile (Orange)", "search_names": ["NJU MOBILE"], "category": "Mobile"},
+    {"name": "Lajt Mobile", "search_names": ["LAJT MOBILE", "LAJT"], "category": "Mobile"},
+    {"name": "Lycamobile", "search_names": ["Lycamobile", "LYCAMOBILE POLSKA"], "category": "Mobile"},
+    {"name": "Premium Mobile", "search_names": ["PREMIUM MOBILE"], "category": "Mobile"},
+    {"name": "Aero2", "search_names": ["AERO2"], "category": "Mobile"},
+    {"name": "Heyah (T-Mobile)", "search_names": ["HEYAH"], "category": "Mobile"},
+    {"name": "Red Bull Mobile", "search_names": ["RED BULL MOBILE"], "category": "Mobile"},
+    {"name": "Plush (Plus)", "search_names": ["PLUSH"], "category": "Mobile"},
+    {"name": "Fakt Mobile", "search_names": ["FAKT MOBILE"], "category": "Mobile"},
+    {"name": "Klucz Mobile", "search_names": ["KLUCZ MOBILE"], "category": "Mobile"},
+    {"name": "Lemon Mobile", "search_names": ["LEMON MOBILE"], "category": "Mobile"},
+    {"name": "a2mobile", "search_names": ["A2MOBILE"], "category": "Mobile"},
+    {"name": "Tuya Mobile", "search_names": ["TUYA"], "category": "Mobile"},
+
+    # ─── Major electronics retail chains ─────────────────────────────────
+    {"name": "Media Expert (TERG)", "search_names": ["Media Expert", "TERG", "MEDIA EXPERT"], "category": "Mobile"},
+    {"name": "Media Markt (MediaMarktSaturn)", "search_names": ["Media Markt", "MEDIA SATURN HOLDING POLSKA", "MEDIAMARKT"], "category": "Mobile"},
+    {"name": "RTV Euro AGD (Euro-net)", "search_names": ["Euro AGD", "RTV EURO AGD", "EURO-NET"], "category": "Mobile"},
+    {"name": "Neonet", "search_names": ["NEONET"], "category": "Mobile"},
+    {"name": "Electro (Neonet group)", "search_names": ["ELECTRO"], "category": "Mobile"},
+    {"name": "Avans", "search_names": ["AVANS"], "category": "Mobile"},
+    {"name": "Mix Electronics", "search_names": ["MIX ELECTRONICS"], "category": "Mobile"},
+
+    # ─── IT / computer / phone specialist chains ─────────────────────────
     {"name": "x-kom", "search_names": ["x-kom", "X-KOM"], "category": "Mobile"},
     {"name": "Komputronik", "search_names": ["Komputronik", "KOMPUTRONIK"], "category": "Mobile"},
     {"name": "Morele.net", "search_names": ["Morele.net", "MORELE NET", "MORELE"], "category": "Mobile"},
+    {"name": "al.to (x-kom group)", "search_names": ["AL.TO", "ALTO"], "category": "Mobile"},
+    {"name": "Sferis", "search_names": ["SFERIS"], "category": "Mobile"},
+    {"name": "Vobis", "search_names": ["VOBIS"], "category": "Mobile"},
+    {"name": "iSource (Apple reseller)", "search_names": ["ISOURCE"], "category": "Mobile"},
+    {"name": "Cortland (Apple reseller)", "search_names": ["CORTLAND"], "category": "Mobile"},
 
-    # Mobile-specific retailers
-    {"name": "iSpot (Apple)", "search_names": ["iSpot", "ISPOT", "APPLE POLSKA"], "category": "Mobile"},
-    {"name": "Samsung Polska", "search_names": ["Samsung Electronics Polska", "SAMSUNG POLSKA", "SAMSUNG ELECTRONICS"], "category": "Mobile"},
-    {"name": "Xiaomi Polska", "search_names": ["Xiaomi", "XIAOMI"], "category": "Mobile"},
-    {"name": "Huawei Polska", "search_names": ["Huawei Polska", "HUAWEI"], "category": "Mobile"},
-    {"name": "Mi-Home", "search_names": ["MI-HOME", "MI HOME"], "category": "Mobile"},
+    # ─── Phone manufacturer official stores ──────────────────────────────
+    {"name": "Samsung Polska", "search_names": ["Samsung Electronics Polska", "SAMSUNG ELECTRONICS POLSKA"], "category": "Mobile"},
+    {"name": "Apple Polska (iSpot, iDream)", "search_names": ["APPLE POLSKA", "ISPOT", "IDREAM"], "category": "Mobile"},
+    {"name": "Xiaomi Polska (Mi Store)", "search_names": ["XIAOMI POLSKA", "MI STORE", "XIAOMI"], "category": "Mobile"},
+    {"name": "Huawei Polska", "search_names": ["Huawei Polska", "HUAWEI POLSKA"], "category": "Mobile"},
+    {"name": "Sony Polska", "search_names": ["SONY POLSKA", "SONY EUROPE"], "category": "Mobile"},
+    {"name": "Motorola / Lenovo Polska", "search_names": ["MOTOROLA POLSKA", "LENOVO POLSKA"], "category": "Mobile"},
+    {"name": "Nokia (HMD Global)", "search_names": ["HMD GLOBAL"], "category": "Mobile"},
+    {"name": "Oppo Polska", "search_names": ["OPPO POLSKA", "OPPO"], "category": "Mobile"},
+    {"name": "realme Polska", "search_names": ["REALME POLSKA", "REALME"], "category": "Mobile"},
+    {"name": "Honor Polska", "search_names": ["HONOR POLSKA", "HONOR"], "category": "Mobile"},
+    {"name": "Google Polska", "search_names": ["GOOGLE POLAND", "GOOGLE POLSKA"], "category": "Mobile"},
 
-    # MVNO / virtual operators
-    {"name": "Virgin Mobile Polska", "search_names": ["Virgin Mobile", "VIRGIN MOBILE"], "category": "Mobile"},
-    {"name": "Nju Mobile (Orange)", "search_names": ["NJU MOBILE"], "category": "Mobile"},
-    {"name": "Lajt Mobile", "search_names": ["LAJT MOBILE", "LAJT"], "category": "Mobile"},
-    {"name": "Lycamobile", "search_names": ["Lycamobile", "LYCAMOBILE"], "category": "Mobile"},
-
-    # Phone repair / accessories chains
-    {"name": "GSM Service", "search_names": ["GSM SERVICE"], "category": "Mobile"},
+    # ─── Phone / IT distributors / wholesalers ───────────────────────────
+    {"name": "ABC Data", "search_names": ["ABC DATA"], "category": "Mobile"},
+    {"name": "Also Polska", "search_names": ["ALSO POLSKA"], "category": "Mobile"},
+    {"name": "AB SA (IT distributor)", "search_names": ["AB SA", "AB SPOLKA AKCYJNA"], "category": "Mobile"},
+    {"name": "Ingram Micro Polska", "search_names": ["INGRAM MICRO"], "category": "Mobile"},
+    {"name": "Tech Data / TD Synnex", "search_names": ["TECH DATA POLSKA", "TD SYNNEX"], "category": "Mobile"},
+    {"name": "Action SA", "search_names": ["ACTION", "ACTION SA"], "category": "Mobile"},
     {"name": "TelForceOne", "search_names": ["TelForceOne", "TELFORCEONE"], "category": "Mobile"},
-    {"name": "mBank (mobile banking)", "search_names": ["MBANK"], "category": "Mobile"},
+    {"name": "EET Europarts Polska", "search_names": ["EET EUROPARTS"], "category": "Mobile"},
+
+    # ─── Phone accessories / repair / Polish brands ──────────────────────
+    {"name": "GSM Service", "search_names": ["GSM SERVICE"], "category": "Mobile"},
+    {"name": "Teletorium", "search_names": ["TELETORIUM"], "category": "Mobile"},
+    {"name": "MyPhone (Mobiway)", "search_names": ["MYPHONE", "MOBIWAY"], "category": "Mobile"},
+    {"name": "Maxcom (Polish brand)", "search_names": ["MAXCOM"], "category": "Mobile"},
+    {"name": "Kruger&Matz", "search_names": ["KRUGER MATZ", "KRUGER"], "category": "Mobile"},
+
+    # ─── E-commerce / marketplaces ───────────────────────────────────────
+    {"name": "Allegro", "search_names": ["ALLEGRO"], "category": "Mobile"},
+    {"name": "Amazon Polska", "search_names": ["AMAZON POLSKA"], "category": "Mobile"},
+    {"name": "Empik (electronics)", "search_names": ["EMPIK"], "category": "Mobile"},
+
+    # ─── Hypermarkets with electronics/phone sections ────────────────────
+    {"name": "Auchan Polska", "search_names": ["AUCHAN POLSKA"], "category": "Mobile"},
+    {"name": "Carrefour Polska", "search_names": ["CARREFOUR POLSKA"], "category": "Mobile"},
+    {"name": "Kaufland Polska", "search_names": ["KAUFLAND POLSKA"], "category": "Mobile"},
+    {"name": "E.Leclerc Polska", "search_names": ["E.LECLERC", "LECLERC POLSKA"], "category": "Mobile"},
 ]
 
 OUTPUT_COLUMNS = [
