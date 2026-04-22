@@ -64,6 +64,7 @@ EMAIL_PATTERN = r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
 OUTPUT_COLUMNS = [
     # ─── Identity ───────────────────────────────────────────────────────
     "input_name",
+    "input_nip",
     "category",
     "api_name",
     "nip",
@@ -451,17 +452,17 @@ def main():
 
     logger.info(f"Loaded {len(df)} rows, {len(df.columns)} columns")
 
-    # Detect columns
-    name_col = find_column(df, ["chain_name", "api_name", "input_name", "name", "company_name"],
+    # Detect columns — try input_* variants first (from lookup scripts)
+    name_col = find_column(df, ["input_name", "chain_name", "api_name", "name", "company_name"],
                            required=True, label="Name")
     cat_col = find_column(df, ["category", "channel"])
-    nip_col = find_column(df, ["nip", "NIP", "input_nip"])
-    regon_col = find_column(df, ["regon", "REGON"])
+    nip_col = find_column(df, ["input_nip", "nip", "NIP"])
+    regon_col = find_column(df, ["input_regon", "regon", "REGON"])
     krs_col = find_column(df, ["krs", "KRS"])
     status_col = find_column(df, ["status", "match_status"])
     is_active_col = find_column(df, ["is_active"])
     entity_type_col = find_column(df, ["entity_type"])
-    api_name_col = find_column(df, ["api_name"])
+    api_name_col = find_column(df, ["api_name", "name"])
     street_col = find_column(df, ["street"])
     building_col = find_column(df, ["building"])
     unit_col = find_column(df, ["unit"])
@@ -602,6 +603,7 @@ def main():
 
         out_row = {
             "input_name": name,
+            "input_nip": nip_val,
             "category": category,
             "api_name": best("name", api_name_col),
             "nip": best("nip", nip_col),
