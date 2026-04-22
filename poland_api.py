@@ -711,9 +711,23 @@ class PolandAPIClient:
             result["email"] = report.get("praw_adresEmail", "") or result["email"]
             result["phone"] = report.get("praw_numerTelefonu", "") or result["phone"]
             result["website"] = report.get("praw_adresStronyinternetowej", "") or result["website"]
+            result["fax"] = report.get("praw_numerFaksu", "") or result.get("fax", "")
             krs = report.get("praw_numerWRejestrzeEwidencji", "")
             if krs:
                 result["krs"] = krs
+            result["date_created"] = report.get("praw_dataWpisuDoREGON", "") or result.get("date_created", "")
+            result["date_suspended"] = report.get("praw_dataZawieszeniaDzialalnosci", "") or result.get("date_suspended", "")
+            result["date_resumed"] = report.get("praw_dataWznowieniaDzialalnosci", "") or result.get("date_resumed", "")
+            result["date_deleted"] = report.get("praw_dataWykresleniazREGON", "") or result.get("date_deleted", "")
+            result["date_last_change"] = report.get("praw_dataZaistnieniaZmiany", "") or result.get("date_last_change", "")
+            result["num_local_units"] = report.get("praw_liczbaJednostekLokalnych", "") or result.get("num_local_units", "")
+            result["legal_form_code"] = report.get("praw_formaWlasnosci_Symbol", "") or result.get("legal_form_code", "")
+            result["legal_form_name"] = report.get("praw_formaFinansowania_Nazwa", "") or result.get("legal_form_name", "")
+            result["legal_form_specific"] = report.get("praw_formaPrawna_Nazwa", "") or result.get("legal_form_specific", "")
+            result["ownership_form"] = report.get("praw_formaWlasnosci_Nazwa", "") or result.get("ownership_form", "")
+            result["size_category"] = report.get("praw_podstawowaFormaPrawna_Nazwa", "") or result.get("size_category", "")
+            result["registration_number"] = report.get("praw_numerWRejestrzeEwidencji", "") or result.get("registration_number", "")
+            result["registry_type"] = report.get("praw_rodzajRejestru_Nazwa", "") or result.get("registry_type", "")
             for i in range(1, 10):
                 code = report.get(f"praw_pkdKod{i}", "")
                 if code and code not in result["pkd_codes"]:
@@ -723,6 +737,15 @@ class PolandAPIClient:
             result["email"] = report.get("fiz_adresEmail", "") or result["email"]
             result["phone"] = report.get("fiz_numerTelefonu", "") or result["phone"]
             result["website"] = report.get("fiz_adresStronyinternetowej", "") or result["website"]
+            result["fax"] = report.get("fiz_numerFaksu", "") or result.get("fax", "")
+            result["date_created"] = report.get("fiz_dataWpisuDoREGON", "") or result.get("date_created", "")
+            result["date_suspended"] = report.get("fiz_dataZawieszeniaDzialalnosci", "") or result.get("date_suspended", "")
+            result["date_resumed"] = report.get("fiz_dataWznowieniaDzialalnosci", "") or result.get("date_resumed", "")
+            result["date_deleted"] = report.get("fiz_dataWykresleniazREGON", "") or result.get("date_deleted", "")
+            result["date_last_change"] = report.get("fiz_dataZaistnieniaZmiany", "") or result.get("date_last_change", "")
+            result["num_local_units"] = report.get("fiz_liczbaJednostekLokalnych", "") or result.get("num_local_units", "")
+            result["owner_first_name"] = report.get("fiz_imie1", "") or result.get("owner_first_name", "")
+            result["owner_last_name"] = report.get("fiz_nazwisko", "") or result.get("owner_last_name", "")
             for i in range(1, 10):
                 code = report.get(f"fiz_pkdKod{i}", "")
                 if code and code not in result["pkd_codes"]:
