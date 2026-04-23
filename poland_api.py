@@ -247,6 +247,95 @@ class PolandAPIClient:
             logger.error(f"CEIDG API error for '{name}': {e}")
             return []
 
+    def search_ceidg_by_pkd(self, pkd_code, status=1):
+        """Search CEIDG by PKD code. Returns list of result dicts.
+
+        Args:
+            pkd_code: PKD code like "47.42.Z"
+            status: 1=active, 2=suspended, 3=closed, 4=deleted, 9=all
+        """
+        if not self.ceidg_api_key:
+            logger.warning("No CEIDG API key configured.")
+            return []
+
+        self._rate_limit_ceidg()
+
+        headers = {
+            "Authorization": f"Bearer {self.ceidg_api_key}",
+            "Accept": "application/json",
+        }
+        params = {"pkd": pkd_code}
+        if status:
+            params["status"] = status
+
+        try:
+            response = requests.get(
+                f"{CEIDG_API_BASE}/firmy", headers=headers, params=params, timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            results = []
+            firms = data.get("firmy", data) if isinstance(data, dict) else data
+            if not isinstance(firms, list):
+                firms = [firms] if firms else []
+
+            for firm in firms:
+                addr = firm.get("adresDzialalnosci", {})
+                address = _build_address_dict(addr)
+                owner = firm.get("wlasciciel", {}) or {}
+
+                result = {
+                    "name": firm.get("nazwa", ""),
+                    "nip": owner.get("nip", "") or firm.get("nip", ""),
+                    "regon": owner.get("regon", "") or firm.get("regon", ""),
+                    "krs": "",
+                    "address": address,
+                    "address_str": _format_address(address),
+                    "street": address.get("street", ""),
+                    "building": address.get("building", ""),
+                    "unit": address.get("unit", ""),
+                    "zip_code": address.get("zip_code", ""),
+                    "city": address.get("city", ""),
+                    "municipality": address.get("municipality", ""),
+                    "county": address.get("county", ""),
+                    "province": address.get("province", ""),
+                    "country": address.get("country", ""),
+                    "mailing_address_str": _format_address(
+                        _build_address_dict(firm.get("adresKorespondencyjny", {}))
+                    ),
+                    "status": firm.get("status", ""),
+                    "is_active": firm.get("status", "") == "AKTYWNY",
+                    "date_started": firm.get("dataRozpoczecia", ""),
+                    "date_ended": firm.get("dataZakonczenia", ""),
+                    "date_suspended": firm.get("dataZawieszenia", ""),
+                    "date_resumed": firm.get("dataWznowienia", ""),
+                    "date_deleted": firm.get("dataWykreslenia", ""),
+                    "pkd_codes": [],
+                    "pkd_main": firm.get("pkdGlowny", ""),
+                    "owner_first_name": owner.get("imie", ""),
+                    "owner_last_name": owner.get("nazwisko", ""),
+                    "email": firm.get("email", ""),
+                    "phone": firm.get("telefon", ""),
+                    "website": firm.get("www", ""),
+                    "ceidg_link": firm.get("link", ""),
+                    "source": "CEIDG",
+                }
+
+                if firm.get("pkdGlowny"):
+                    result["pkd_codes"].append(firm["pkdGlowny"])
+                for pkd in firm.get("pkd", []):
+                    code = pkd if isinstance(pkd, str) else pkd.get("kod", "") if isinstance(pkd, dict) else ""
+                    if code and code != firm.get("pkdGlowny"):
+                        result["pkd_codes"].append(code)
+
+                results.append(result)
+            return results
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"CEIDG PKD search error for '{pkd_code}': {e}")
+            return []
+
     # ---- KRS API (free, no auth) ----
 
     def search_krs(self, krs_number):

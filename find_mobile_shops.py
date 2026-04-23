@@ -424,6 +424,32 @@ def main():
             if new_count:
                 logger.info(f"  -> {new_count} new unique added")
 
+    # ─── METHOD 4: CEIDG direct PKD code search ───────────────────────
+    if has_ceidg and not args.skip_ceidg:
+        logger.info(f"")
+        logger.info(f"{'='*55}")
+        logger.info(f"METHOD 4: CEIDG direct PKD code search ({len(MOBILE_PKD_CODES)} codes)")
+        logger.info(f"{'='*55}")
+        for idx, pkd_code in enumerate(MOBILE_PKD_CODES):
+            logger.info(f"[PKD {idx+1}/{len(MOBILE_PKD_CODES)}] Searching CEIDG for PKD: {pkd_code}")
+            try:
+                results = api_client.search_ceidg_by_pkd(pkd_code, status=1)
+            except Exception as e:
+                logger.error(f"  CEIDG PKD error: {e}")
+                continue
+
+            if not results:
+                logger.info(f"  -> 0 results")
+                continue
+
+            new_count = 0
+            for r in results:
+                stats["total_found"] += 1
+                if add_result(r, "CEIDG_PKD", pkd_code, seen_ids, all_rows,
+                              api_client, stats, args.active_only):
+                    new_count += 1
+            logger.info(f"  -> {len(results)} results, {new_count} new unique")
+
     # ─── Save to Excel ─────────────────────────────────────────────────
     df_out = pd.DataFrame(all_rows, columns=OUTPUT_COLUMNS).fillna("")
 
