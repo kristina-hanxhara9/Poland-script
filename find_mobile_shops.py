@@ -2,10 +2,14 @@
 """
 Find mobile phone specialists and accessories shops in Poland.
 
-Combines three search methods:
-  1. GUS API — search by business name keywords
-  2. CEIDG API — search by name keywords, filter by mobile PKD codes
-  3. KRS API — enrich results with full company data
+Combines multiple search methods:
+  1. GUS API — search by business name keywords (needs GUS key)
+  2. CEIDG API — search by name keywords, filter by mobile PKD codes (needs CEIDG key)
+  3. KRS API — look up known mobile chains by KRS number (FREE, no key needed!)
+  4. KRS enrichment — add full company data from KRS
+
+Use --krs-only to find chains WITHOUT any API keys (uses the built-in list of
+known mobile phone chains with their KRS numbers).
 
 Relevant PKD codes for mobile phone shops:
   47.42.Z — Retail sale of telecommunications equipment
@@ -18,6 +22,7 @@ Relevant PKD codes for mobile phone shops:
 Outputs ALL available API fields.
 
 Usage:
+    python find_mobile_shops.py --krs-only --output mobile_chains.xlsx
     python find_mobile_shops.py --output mobile_specialists.xlsx
     python find_mobile_shops.py --gus-key YOUR_KEY --output mobile_specialists.xlsx
     python find_mobile_shops.py --active-only --output mobile_active.xlsx
@@ -33,6 +38,7 @@ import pandas as pd
 load_dotenv()
 
 from poland_api import PolandAPIClient
+from lookup_chains import MOBILE_CHAINS
 
 logging.basicConfig(
     level=logging.INFO,
@@ -308,6 +314,12 @@ def main():
                         help="Only keep active businesses")
     parser.add_argument("--skip-gus", action="store_true", help="Skip GUS name search")
     parser.add_argument("--skip-ceidg", action="store_true", help="Skip CEIDG search")
+    parser.add_argument("--krs-only", action="store_true",
+                        help="Only use the FREE KRS API with known mobile chain KRS numbers. "
+                        "No GUS or CEIDG key needed!")
+    parser.add_argument("--local-units", action="store_true",
+                        help="Also fetch local units (branch locations) for chains. "
+                        "Requires GUS API key.")
     args = parser.parse_args()
 
     api_client = PolandAPIClient(
@@ -316,16 +328,18 @@ def main():
         use_sandbox=args.sandbox,
     )
 
-    has_gus = bool(api_client.gus_api_key)
-    has_ceidg = bool(api_client.ceidg_api_key)
+    has_gus = bool(api_client.gus_api_key) and not args.krs_only
+    has_ceidg = bool(api_client.ceidg_api_key) and not args.krs_only
 
-    if not has_gus and not has_ceidg:
-        logger.error("Need at least one API key: GUS_API_KEY or CEIDG_API_KEY")
-        sys.exit(1)
+    if not has_gus and not has_ceidg and not args.krs_only:
+        logger.warning("No GUS or CEIDG API key found. Switching to KRS-only mode.")
+        logger.info("KRS API is FREE — will look up known mobile chains by KRS number.")
+        args.krs_only = True
 
     logger.info(f"APIs: GUS={'YES' if has_gus else 'NO'}, CEIDG={'YES' if has_ceidg else 'NO'}, KRS=YES (free)")
 
     all_rows = []
+    local_unit_rows = []
     seen_ids = set()
     stats = {"total_found": 0, "unique": 0, "duplicates": 0,
              "krs_enriched": 0, "active": 0}
@@ -450,6 +464,62 @@ def main():
                     new_count += 1
             logger.info(f"  -> {len(results)} results, {new_count} new unique")
 
+    # ─── METHOD 5: KRS lookup of known mobile chains ────────────────────
+    # This works WITHOUT any API key — KRS is free
+    krs_chains = [c for c in MOBILE_CHAINS if c.get("krs") and c["krs"].isdigit()]
+    if krs_chains:
+        logger.info(f"")
+        logger.info(f"{'='*55}")
+        logger.info(f"METHOD 5: KRS lookup of known mobile chains ({len(krs_chains)} with KRS numbers)")
+        logger.info(f"{'='*55}")
+
+        for idx, chain in enumerate(krs_chains):
+            krs_num = chain["krs"]
+            logger.info(f"[KRS {idx+1}/{len(krs_chains)}] {chain['name']} — KRS: {krs_num}")
+            try:
+                result = api_client.search_krs(krs_num)
+            except Exception as e:
+                logger.error(f"  KRS error: {e}")
+                continue
+
+            if not result:
+                logger.info(f"  -> Not found in KRS")
+                continue
+
+            stats["total_found"] += 1
+
+            # If we have GUS, enrich with full GUS data
+            if has_gus and result.get("nip"):
+                try:
+                    gus_data = api_client.search_gus_by_nip(result["nip"])
+                    if gus_data:
+                        result = api_client._merge_results(gus_data, result)
+                        logger.info(f"  GUS enrichment OK")
+                except Exception as e:
+                    logger.debug(f"  GUS enrichment failed: {e}")
+
+            added = add_result(result, "KRS_CHAIN", chain["name"], seen_ids, all_rows,
+                               api_client, stats, args.active_only)
+            if added:
+                logger.info(f"  -> {result.get('name', '?')} | {result.get('city', '')} | "
+                             f"PKD: {result.get('pkd_main', '')}")
+
+                # Fetch local units if requested and we have GUS
+                if args.local_units and has_gus and result.get("regon") and result.get("entity_type"):
+                    units = api_client.fetch_local_units(result["regon"], result["entity_type"])
+                    for u in units:
+                        local_unit_rows.append({
+                            "chain_name": chain["name"],
+                            "parent_nip": result.get("nip", ""),
+                            "parent_regon": result.get("regon", ""),
+                            "parent_name": result.get("name", ""),
+                            **u,
+                        })
+                    if units:
+                        logger.info(f"  -> {len(units)} local units (branches)")
+            else:
+                logger.info(f"  -> Already found via other method")
+
     # ─── Save to Excel ─────────────────────────────────────────────────
     df_out = pd.DataFrame(all_rows, columns=OUTPUT_COLUMNS).fillna("")
 
@@ -461,6 +531,12 @@ def main():
         active = df_out[df_out["is_active"].astype(str).str.lower().isin(["true", "1", "yes"])]
         if not active.empty:
             active.to_excel(writer, index=False, sheet_name="Active Only")
+
+        # Local units (branch locations) sheet
+        if args.local_units and local_unit_rows:
+            df_units = pd.DataFrame(local_unit_rows).fillna("")
+            df_units.to_excel(writer, index=False, sheet_name="Local Units")
+            logger.info(f"  Sheet 'Local Units': {len(df_units)} branch locations")
 
         pkd_summary = []
         for pkd in df_out["pkd_main"].unique():

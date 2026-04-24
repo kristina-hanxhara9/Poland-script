@@ -590,6 +590,75 @@ class PolandAPIClient:
                 pkd_codes.append({"code": code, "description": desc, "is_main": is_main})
         return pkd_codes
 
+    def fetch_local_units(self, regon, entity_type):
+        """Fetch all local units (jednostki lokalne) for a business from GUS.
+
+        Returns a list of dicts, each representing a branch/local unit with
+        its own REGON14, address, and PKD code.
+        """
+        if not self._gus_ensure_session():
+            return []
+
+        if entity_type == "P":
+            report_name = "BIR11JednostkiLokalne"
+        elif entity_type == "F":
+            report_name = "BIR11OsFizycznaListaJednLok"
+        else:
+            return []
+
+        raw = self._gus_fetch_report(regon, report_name)
+        if not raw:
+            return []
+
+        units = []
+        for item in raw:
+            if entity_type == "P":
+                unit = {
+                    "regon14": item.get("lokpraw_regon14", ""),
+                    "name": item.get("lokpraw_nazwa", ""),
+                    "street": item.get("lokpraw_adSiedzUlica_Nazwa", ""),
+                    "building": item.get("lokpraw_adSiedzNumerNieruchomosci", ""),
+                    "unit_number": item.get("lokpraw_adSiedzNumerLokalu", ""),
+                    "zip_code": item.get("lokpraw_adSiedzKodPocztowy", ""),
+                    "city": item.get("lokpraw_adSiedzMiejscowosc_Nazwa", ""),
+                    "province": item.get("lokpraw_adSiedzWojewodztwo_Nazwa", ""),
+                    "county": item.get("lokpraw_adSiedzPowiat_Nazwa", ""),
+                    "municipality": item.get("lokpraw_adSiedzGmina_Nazwa", ""),
+                    "pkd_main": item.get("lokpraw_pkdPrzewazajace", ""),
+                    "silos_id": item.get("lokpraw_silosID", ""),
+                }
+            else:
+                unit = {
+                    "regon14": item.get("lokfiz_regon14", ""),
+                    "name": item.get("lokfiz_nazwa", ""),
+                    "street": item.get("lokfiz_adSiedzUlica_Nazwa", ""),
+                    "building": item.get("lokfiz_adSiedzNumerNieruchomosci", ""),
+                    "unit_number": item.get("lokfiz_adSiedzNumerLokalu", ""),
+                    "zip_code": item.get("lokfiz_adSiedzKodPocztowy", ""),
+                    "city": item.get("lokfiz_adSiedzMiejscowosc_Nazwa", ""),
+                    "province": item.get("lokfiz_adSiedzWojewodztwo_Nazwa", ""),
+                    "county": item.get("lokfiz_adSiedzPowiat_Nazwa", ""),
+                    "municipality": item.get("lokfiz_adSiedzGmina_Nazwa", ""),
+                    "pkd_main": item.get("lokfiz_pkdPrzewazajace", ""),
+                    "silos_id": item.get("lokfiz_silosID", ""),
+                }
+
+            addr_parts = []
+            if unit["street"]:
+                s = unit["street"]
+                if unit["building"]:
+                    s += f" {unit['building']}"
+                if unit["unit_number"]:
+                    s += f"/{unit['unit_number']}"
+                addr_parts.append(s)
+            if unit["zip_code"] and unit["city"]:
+                addr_parts.append(f"{unit['zip_code']} {unit['city']}")
+            unit["full_address"] = ", ".join(addr_parts)
+            units.append(unit)
+
+        logger.info(f"  Local units for REGON {regon}: {len(units)} found")
+        return units
+
     def _parse_gus_dane(self, dane):
         """Parse a single <dane> element from GUS search results."""
         regon = self._get_xml_text(dane, "Regon")

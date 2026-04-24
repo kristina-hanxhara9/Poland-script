@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """
-Look up major Polish retail chain stores (DIY & Mobile Phone) via GUS API.
+Look up major Polish retail chain stores (DIY & Mobile Phone) via GUS + KRS APIs.
 
 Searches for known chain retailers by name, retrieves full business details
-including NIP, REGON, KRS, addresses, PKD codes, etc.
+including NIP, REGON, KRS, addresses, PKD codes, local units, etc.
+
+Three modes:
+  1. Full mode (default): GUS name search + KRS enrichment (needs GUS API key)
+  2. KRS-only mode (--krs-only): Uses FREE KRS API with known KRS numbers (no key needed!)
+  3. Local units (--local-units): Also fetches all branch locations (needs GUS key)
 
 Usage:
-    python lookup_chains.py --output chains.xlsx
-    python lookup_chains.py --category diy --output diy_chains.xlsx
+    python lookup_chains.py --krs-only --category mobile --output mobile_chains.xlsx
     python lookup_chains.py --category mobile --output mobile_chains.xlsx
+    python lookup_chains.py --local-units --category mobile --output mobile_with_units.xlsx
     python lookup_chains.py --category all --output all_chains.xlsx
 """
 
@@ -160,93 +165,61 @@ DIY_CHAINS = [
 
 MOBILE_CHAINS = [
     # ─── Mobile network operators (MNO) with retail stores ───────────────
-    {"name": "Orange Polska", "search_names": ["Orange Polska", "ORANGE POLSKA"], "category": "Mobile"},
-    {"name": "T-Mobile Polska", "search_names": ["T-Mobile Polska", "T-MOBILE POLSKA"], "category": "Mobile"},
-    {"name": "Play (P4 Sp. z o.o.)", "search_names": ["P4 Sp. z o.o.", "P4"], "category": "Mobile"},
-    {"name": "Plus (Polkomtel)", "search_names": ["Polkomtel", "POLKOMTEL"], "category": "Mobile"},
-    {"name": "Vectra", "search_names": ["VECTRA"], "category": "Mobile"},
-    {"name": "UPC Polska (Play)", "search_names": ["UPC POLSKA"], "category": "Mobile"},
-    {"name": "Netia", "search_names": ["NETIA"], "category": "Mobile"},
-    {"name": "Inea", "search_names": ["INEA"], "category": "Mobile"},
+    {"name": "Orange Polska", "search_names": ["Orange Polska", "ORANGE POLSKA"], "category": "Mobile", "krs": "0000010681", "nip": "5260250995"},
+    {"name": "T-Mobile Polska", "search_names": ["T-Mobile Polska", "T-MOBILE POLSKA"], "category": "Mobile", "krs": "0000391193", "nip": "5261040567"},
+    {"name": "Play (P4 Sp. z o.o.)", "search_names": ["P4 Sp. z o.o.", "P4"], "category": "Mobile", "krs": "0000217207", "nip": "5213236440"},
+    {"name": "Plus (Polkomtel)", "search_names": ["Polkomtel", "POLKOMTEL"], "category": "Mobile", "krs": "0000419430", "nip": "5271037727"},
+    {"name": "Vectra", "search_names": ["VECTRA"], "category": "Mobile", "krs": "0000076684"},
+    {"name": "UPC Polska (Play)", "search_names": ["UPC POLSKA"], "category": "Mobile", "krs": "0000273136"},
+    {"name": "Netia", "search_names": ["NETIA"], "category": "Mobile", "krs": "0000041649", "nip": "5262361475"},
+    {"name": "Inea", "search_names": ["INEA"], "category": "Mobile", "krs": "0000063469"},
 
     # ─── MVNOs (Virtual operators) ───────────────────────────────────────
     {"name": "Virgin Mobile Polska", "search_names": ["Virgin Mobile", "VIRGIN MOBILE POLSKA"], "category": "Mobile"},
-    {"name": "Nju Mobile (Orange)", "search_names": ["NJU MOBILE"], "category": "Mobile"},
-    {"name": "Lajt Mobile", "search_names": ["LAJT MOBILE", "LAJT"], "category": "Mobile"},
     {"name": "Lycamobile", "search_names": ["Lycamobile", "LYCAMOBILE POLSKA"], "category": "Mobile"},
-    {"name": "Premium Mobile", "search_names": ["PREMIUM MOBILE"], "category": "Mobile"},
-    {"name": "Aero2", "search_names": ["AERO2"], "category": "Mobile"},
-    {"name": "Heyah (T-Mobile)", "search_names": ["HEYAH"], "category": "Mobile"},
-    {"name": "Red Bull Mobile", "search_names": ["RED BULL MOBILE"], "category": "Mobile"},
-    {"name": "Plush (Plus)", "search_names": ["PLUSH"], "category": "Mobile"},
-    {"name": "Fakt Mobile", "search_names": ["FAKT MOBILE"], "category": "Mobile"},
-    {"name": "Klucz Mobile", "search_names": ["KLUCZ MOBILE"], "category": "Mobile"},
-    {"name": "Lemon Mobile", "search_names": ["LEMON MOBILE"], "category": "Mobile"},
-    {"name": "a2mobile", "search_names": ["A2MOBILE"], "category": "Mobile"},
-    {"name": "Tuya Mobile", "search_names": ["TUYA"], "category": "Mobile"},
-
-    # ─── Additional MVNOs ──────────────────────────────────────────────
-    {"name": "Mobile Vikings", "search_names": ["MOBILE VIKINGS"], "category": "Mobile"},
-    {"name": "Vectra Mobile", "search_names": ["VECTRA MOBILE"], "category": "Mobile"},
-    {"name": "FM GROUP Mobile", "search_names": ["FM GROUP MOBILE", "FM GROUP"], "category": "Mobile"},
-    {"name": "Otvarta", "search_names": ["OTVARTA"], "category": "Mobile"},
-    {"name": "Sat Film", "search_names": ["SAT FILM"], "category": "Mobile"},
-    {"name": "Fonia Telekom", "search_names": ["FONIA TELEKOM"], "category": "Mobile"},
-    {"name": "Multimedia Polska", "search_names": ["MULTIMEDIA POLSKA"], "category": "Mobile"},
-    {"name": "Canal+ Polska (nc+ Mobile)", "search_names": ["CANAL PLUS POLSKA", "CANAL+"], "category": "Mobile"},
+    {"name": "Premium Mobile", "search_names": ["PREMIUM MOBILE"], "category": "Mobile", "krs": "0000337781"},
+    {"name": "Multimedia Polska", "search_names": ["MULTIMEDIA POLSKA"], "category": "Mobile", "krs": "0000065242"},
+    {"name": "Cyfrowy Polsat (Grupa Polsat Plus)", "search_names": ["CYFROWY POLSAT"], "category": "Mobile", "krs": "0000010078", "nip": "7961810732"},
 
     # ─── Major electronics retail chains ─────────────────────────────────
-    {"name": "Media Expert (TERG)", "search_names": ["Media Expert", "TERG", "MEDIA EXPERT"], "category": "Mobile"},
-    {"name": "Media Markt (MediaMarktSaturn)", "search_names": ["Media Markt", "MEDIA SATURN HOLDING POLSKA", "MEDIAMARKT"], "category": "Mobile"},
-    {"name": "RTV Euro AGD (Euro-net)", "search_names": ["Euro AGD", "RTV EURO AGD", "EURO-NET"], "category": "Mobile"},
-    {"name": "Neonet (x-kom group)", "search_names": ["NEONET"], "category": "Mobile"},
+    {"name": "Media Expert (TERG)", "search_names": ["Media Expert", "TERG", "MEDIA EXPERT"], "category": "Mobile", "krs": "0000048007", "nip": "7251752913"},
+    {"name": "Media Markt (MediaMarktSaturn)", "search_names": ["Media Markt", "MEDIA SATURN HOLDING POLSKA", "MEDIAMARKT"], "category": "Mobile", "krs": "0000028842"},
+    {"name": "RTV Euro AGD (Euro-net)", "search_names": ["Euro AGD", "RTV EURO AGD", "EURO-NET"], "category": "Mobile", "krs": "0000117710", "nip": "5270004159"},
+    {"name": "Neonet (x-kom group)", "search_names": ["NEONET"], "category": "Mobile", "krs": "0000263628"},
     {"name": "Max Elektro", "search_names": ["MAX ELEKTRO"], "category": "Mobile"},
     {"name": "Kakto", "search_names": ["KAKTO"], "category": "Mobile"},
     {"name": "Rebel Electro", "search_names": ["REBEL ELECTRO"], "category": "Mobile"},
-    {"name": "Electro (Neonet group)", "search_names": ["ELECTRO"], "category": "Mobile"},
     {"name": "Avans", "search_names": ["AVANS"], "category": "Mobile"},
     {"name": "Mix Electronics", "search_names": ["MIX ELECTRONICS"], "category": "Mobile"},
-    {"name": "OleOle (Euro-net online)", "search_names": ["OLEOLE", "OLE OLE"], "category": "Mobile"},
 
     # ─── IT / computer / phone specialist chains ─────────────────────────
-    {"name": "x-kom", "search_names": ["x-kom", "X-KOM"], "category": "Mobile"},
-    {"name": "Komputronik", "search_names": ["Komputronik", "KOMPUTRONIK"], "category": "Mobile"},
-    {"name": "Morele.net", "search_names": ["Morele.net", "MORELE NET", "MORELE"], "category": "Mobile"},
-    {"name": "al.to (x-kom group)", "search_names": ["AL.TO", "ALTO"], "category": "Mobile"},
+    {"name": "x-kom", "search_names": ["x-kom", "X-KOM"], "category": "Mobile", "nip": "6443492570"},
+    {"name": "Komputronik", "search_names": ["Komputronik", "KOMPUTRONIK"], "category": "Mobile", "krs": "0000270885", "nip": "6342525416"},
+    {"name": "Morele.net", "search_names": ["Morele.net", "MORELE NET", "MORELE"], "category": "Mobile", "krs": "0000393967"},
     {"name": "Sferis (Action)", "search_names": ["SFERIS"], "category": "Mobile"},
-    {"name": "Vobis (i-Terra)", "search_names": ["VOBIS", "I-TERRA"], "category": "Mobile"},
-    {"name": "Proline", "search_names": ["PROLINE"], "category": "Mobile"},
-    {"name": "Neo24", "search_names": ["NEO24"], "category": "Mobile"},
-    {"name": "AMSO Komputery", "search_names": ["AMSO"], "category": "Mobile"},
     {"name": "iSpot (Apple Premium Reseller)", "search_names": ["ISPOT"], "category": "Mobile"},
     {"name": "Cortland (Apple reseller)", "search_names": ["CORTLAND"], "category": "Mobile"},
-    {"name": "iMad (Apple)", "search_names": ["IMAD"], "category": "Mobile"},
 
     # ─── Phone manufacturer official stores ──────────────────────────────
-    {"name": "Samsung Polska", "search_names": ["Samsung Electronics Polska", "SAMSUNG ELECTRONICS POLSKA"], "category": "Mobile"},
-    {"name": "Apple Polska (iSpot, iDream)", "search_names": ["APPLE POLSKA", "ISPOT", "IDREAM"], "category": "Mobile"},
+    {"name": "Samsung Polska", "search_names": ["Samsung Electronics Polska", "SAMSUNG ELECTRONICS POLSKA"], "category": "Mobile", "krs": "0000128080", "nip": "5260152505"},
     {"name": "Xiaomi Polska (Mi Store)", "search_names": ["XIAOMI POLSKA", "MI STORE", "XIAOMI"], "category": "Mobile"},
-    {"name": "Huawei Polska", "search_names": ["Huawei Polska", "HUAWEI POLSKA"], "category": "Mobile"},
+    {"name": "Huawei Polska", "search_names": ["Huawei Polska", "HUAWEI POLSKA"], "category": "Mobile", "krs": "0000140955"},
     {"name": "Sony Polska", "search_names": ["SONY POLSKA", "SONY EUROPE"], "category": "Mobile"},
-    {"name": "Motorola / Lenovo Polska", "search_names": ["MOTOROLA POLSKA", "LENOVO POLSKA"], "category": "Mobile"},
+    {"name": "Motorola / Lenovo Polska", "search_names": ["MOTOROLA POLSKA", "LENOVO POLSKA"], "category": "Mobile", "krs": "0000187782"},
     {"name": "Nokia (HMD Global)", "search_names": ["HMD GLOBAL"], "category": "Mobile"},
     {"name": "Oppo Polska", "search_names": ["OPPO POLSKA", "OPPO"], "category": "Mobile"},
     {"name": "realme Polska", "search_names": ["REALME POLSKA", "REALME"], "category": "Mobile"},
-    {"name": "Honor Polska", "search_names": ["HONOR POLSKA", "HONOR"], "category": "Mobile"},
-    {"name": "Google Polska", "search_names": ["GOOGLE POLAND", "GOOGLE POLSKA"], "category": "Mobile"},
-    {"name": "ASBIS Polska (Samsung/iSpace stores)", "search_names": ["ASBIS POLSKA", "ASBIS"], "category": "Mobile"},
+    {"name": "Google Polska", "search_names": ["GOOGLE POLAND", "GOOGLE POLSKA"], "category": "Mobile", "krs": "0000267967"},
+    {"name": "ASBIS Polska", "search_names": ["ASBIS POLSKA", "ASBIS"], "category": "Mobile", "krs": "0000037705"},
     {"name": "Mi-Home.pl (Xiaomi stores)", "search_names": ["MI-HOME", "MI HOME"], "category": "Mobile"},
-    {"name": "MiMarkt (Xiaomi)", "search_names": ["MIMARKT"], "category": "Mobile"},
 
     # ─── Phone / IT distributors / wholesalers ───────────────────────────
-    {"name": "ABC Data", "search_names": ["ABC DATA"], "category": "Mobile"},
+    {"name": "ABC Data", "search_names": ["ABC DATA"], "category": "Mobile", "krs": "0000287132", "nip": "5242617178"},
     {"name": "Also Polska", "search_names": ["ALSO POLSKA"], "category": "Mobile"},
-    {"name": "AB SA (IT distributor)", "search_names": ["AB SA", "AB SPOLKA AKCYJNA"], "category": "Mobile"},
-    {"name": "Ingram Micro Polska", "search_names": ["INGRAM MICRO"], "category": "Mobile"},
-    {"name": "Tech Data / TD Synnex", "search_names": ["TECH DATA POLSKA", "TD SYNNEX"], "category": "Mobile"},
-    {"name": "Action SA", "search_names": ["ACTION", "ACTION SA"], "category": "Mobile"},
-    {"name": "TelForceOne", "search_names": ["TelForceOne", "TELFORCEONE"], "category": "Mobile"},
-    {"name": "EET Europarts Polska", "search_names": ["EET EUROPARTS"], "category": "Mobile"},
+    {"name": "AB SA (IT distributor)", "search_names": ["AB SA", "AB SPOLKA AKCYJNA"], "category": "Mobile", "krs": "0000053834", "nip": "8951615977"},
+    {"name": "Ingram Micro Polska", "search_names": ["INGRAM MICRO"], "category": "Mobile", "krs": "0000038636"},
+    {"name": "Action SA", "search_names": ["ACTION", "ACTION SA"], "category": "Mobile", "krs": "0000214038", "nip": "5271107221"},
+    {"name": "TelForceOne", "search_names": ["TelForceOne", "TELFORCEONE"], "category": "Mobile", "krs": "0000252002", "nip": "8982030993"},
 
     # ─── Phone accessories / repair / Polish brands ──────────────────────
     {"name": "GSM Service", "search_names": ["GSM SERVICE"], "category": "Mobile"},
@@ -254,22 +227,20 @@ MOBILE_CHAINS = [
     {"name": "Teleakces.com", "search_names": ["TELEAKCES"], "category": "Mobile"},
     {"name": "CCS (Cyfrowe Centrum Serwisowe)", "search_names": ["CYFROWE CENTRUM SERWISOWE", "CCS"], "category": "Mobile"},
     {"name": "Cordon Electronics (sbe-online)", "search_names": ["CORDON ELECTRONICS"], "category": "Mobile"},
-    {"name": "MyPhone / mPTech (Polish brand)", "search_names": ["MPTECH", "MYPHONE"], "category": "Mobile"},
-    {"name": "Hammer (mPTech rugged phones)", "search_names": ["HAMMER MPTECH"], "category": "Mobile"},
-    {"name": "Maxcom (Polish brand)", "search_names": ["MAXCOM"], "category": "Mobile"},
+    {"name": "MyPhone / mPTech (Polish brand)", "search_names": ["MPTECH", "MYPHONE"], "category": "Mobile", "krs": "0000371014"},
+    {"name": "Maxcom (Polish brand)", "search_names": ["MAXCOM"], "category": "Mobile", "krs": "0000076759"},
     {"name": "Kruger&Matz", "search_names": ["KRUGER MATZ", "KRUGER"], "category": "Mobile"},
 
     # ─── E-commerce / marketplaces ───────────────────────────────────────
-    {"name": "Allegro", "search_names": ["ALLEGRO"], "category": "Mobile"},
+    {"name": "Allegro", "search_names": ["ALLEGRO"], "category": "Mobile", "krs": "0000635012", "nip": "5272806857"},
     {"name": "Amazon Polska", "search_names": ["AMAZON POLSKA"], "category": "Mobile"},
-    {"name": "Empik (electronics)", "search_names": ["EMPIK"], "category": "Mobile"},
+    {"name": "Empik (electronics)", "search_names": ["EMPIK"], "category": "Mobile", "krs": "0000024654"},
 
     # ─── Hypermarkets with electronics/phone sections ────────────────────
-    {"name": "Auchan Polska", "search_names": ["AUCHAN POLSKA"], "category": "Mobile"},
-    {"name": "Carrefour Polska", "search_names": ["CARREFOUR POLSKA"], "category": "Mobile"},
-    {"name": "Kaufland Polska", "search_names": ["KAUFLAND POLSKA"], "category": "Mobile"},
+    {"name": "Auchan Polska", "search_names": ["AUCHAN POLSKA"], "category": "Mobile", "krs": "0000028508"},
+    {"name": "Carrefour Polska", "search_names": ["CARREFOUR POLSKA"], "category": "Mobile", "krs": "0000049087"},
+    {"name": "Kaufland Polska", "search_names": ["KAUFLAND POLSKA"], "category": "Mobile", "krs": "0000091702"},
     {"name": "E.Leclerc Polska", "search_names": ["E.LECLERC", "LECLERC POLSKA"], "category": "Mobile"},
-    {"name": "Cyfrowy Polsat (Grupa Polsat Plus)", "search_names": ["CYFROWY POLSAT"], "category": "Mobile"},
 ]
 
 OUTPUT_COLUMNS = [
@@ -318,6 +289,25 @@ OUTPUT_COLUMNS = [
     "fax",
     "website",
     "api_source",
+]
+
+LOCAL_UNIT_COLUMNS = [
+    "chain_name",
+    "parent_nip",
+    "parent_regon",
+    "parent_name",
+    "regon14",
+    "unit_name",
+    "street",
+    "building",
+    "unit_number",
+    "zip_code",
+    "city",
+    "province",
+    "county",
+    "municipality",
+    "pkd_main",
+    "full_address",
 ]
 
 
@@ -431,9 +421,35 @@ def build_row(chain_info, result, search_term):
     }
 
 
+def lookup_by_krs(api_client, chain_info):
+    """Look up a chain using its known KRS number (free API, no auth needed)."""
+    krs = chain_info.get("krs", "")
+    if not krs or not krs.isdigit():
+        return None
+
+    logger.info(f"  KRS lookup: {krs}")
+    result = api_client.search_krs(krs)
+    if result:
+        result["_search_term"] = f"KRS:{krs}"
+    return result
+
+
+def lookup_by_nip_gus(api_client, chain_info):
+    """Look up a chain using its known NIP via GUS."""
+    nip = chain_info.get("nip", "")
+    if not nip:
+        return None
+
+    logger.info(f"  GUS NIP lookup: {nip}")
+    result = api_client.search_gus_by_nip(nip)
+    if result:
+        result["_search_term"] = f"NIP:{nip}"
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Look up Polish DIY and mobile phone retail chains via GUS API."
+        description="Look up Polish DIY and mobile phone retail chains via GUS + KRS APIs."
     )
     parser.add_argument("--output", "-o", default="chains.xlsx", help="Output Excel file")
     parser.add_argument("--category", "-c", default="all",
@@ -441,6 +457,12 @@ def main():
                         help="Which category to search (default: all)")
     parser.add_argument("--gus-key", help="GUS API key (or set GUS_API_KEY env var)")
     parser.add_argument("--sandbox", action="store_true", help="Use GUS sandbox")
+    parser.add_argument("--krs-only", action="store_true",
+                        help="Use ONLY the free KRS API (no GUS key needed). "
+                        "Only finds chains with known KRS numbers.")
+    parser.add_argument("--local-units", action="store_true",
+                        help="Also fetch local units (branch locations) for each chain found. "
+                        "Requires GUS API key.")
     args = parser.parse_args()
 
     # Build chain list
@@ -454,30 +476,107 @@ def main():
 
     # Set up API
     api_client = PolandAPIClient(gus_api_key=args.gus_key, use_sandbox=args.sandbox)
-    if not api_client.gus_api_key:
-        logger.error("No GUS API key. Set GUS_API_KEY env var or use --gus-key.")
-        sys.exit(1)
+    has_gus = bool(api_client.gus_api_key) and not args.krs_only
+
+    if args.krs_only:
+        krs_chains = [c for c in chains if c.get("krs") and c["krs"].isdigit()]
+        logger.info(f"KRS-only mode: {len(krs_chains)} chains have known KRS numbers "
+                     f"(out of {len(chains)} total)")
+        logger.info("KRS API is FREE — no API key needed.")
+    elif not has_gus:
+        krs_chains = [c for c in chains if c.get("krs") and c["krs"].isdigit()]
+        logger.warning(f"No GUS API key. Falling back to KRS-only mode.")
+        logger.info(f"  {len(krs_chains)} chains have known KRS numbers.")
+        args.krs_only = True
+
+    if args.local_units and not has_gus:
+        logger.warning("--local-units requires GUS API key. Local units will be skipped.")
+        args.local_units = False
 
     # Process
     all_rows = []
-    stats = {"found": 0, "not_found": 0, "total_entities": 0}
+    local_unit_rows = []
+    stats = {"found": 0, "not_found": 0, "total_entities": 0, "local_units": 0}
 
     for idx, chain in enumerate(chains):
         logger.info(f"[{idx + 1}/{len(chains)}] {chain['name']} ({chain['category']})")
 
-        results = search_chain(api_client, chain)
+        result = None
+        results = []
+
+        if args.krs_only:
+            # KRS-only mode: use known KRS number
+            if chain.get("krs") and chain["krs"].isdigit():
+                r = lookup_by_krs(api_client, chain)
+                if r:
+                    results = [r]
+            else:
+                logger.info(f"  -> No KRS number known, skipping (KRS-only mode)")
+        else:
+            # Full mode: try GUS name search first
+            results = search_chain(api_client, chain)
+
+            # If GUS name search failed, try by known NIP
+            if not results and chain.get("nip"):
+                r = lookup_by_nip_gus(api_client, chain)
+                if r:
+                    results = [r]
+
+            # If still nothing, try KRS as fallback
+            if not results and chain.get("krs") and chain["krs"].isdigit():
+                r = lookup_by_krs(api_client, chain)
+                if r:
+                    results = [r]
 
         if results:
             stats["found"] += 1
             stats["total_entities"] += len(results)
             for r in results:
                 search_term = r.pop("_search_term", chain["search_names"][0])
-                # Enrich with KRS
-                if r.get("krs"):
+
+                # Enrich with KRS if not already from KRS
+                if r.get("krs") and r.get("source") != "KRS":
                     krs_data = api_client.search_krs(r["krs"])
                     if krs_data:
                         r = api_client._merge_results(r, krs_data)
+                elif not r.get("krs") and chain.get("krs") and chain["krs"].isdigit():
+                    krs_data = api_client.search_krs(chain["krs"])
+                    if krs_data:
+                        r = api_client._merge_results(r, krs_data)
+
+                # Enrich with GUS by NIP for extra details (if we have GUS)
+                if has_gus and r.get("source") == "KRS" and r.get("nip"):
+                    gus_data = api_client.search_gus_by_nip(r["nip"])
+                    if gus_data:
+                        r = api_client._merge_results(gus_data, r)
+                        logger.info(f"  GUS enrichment OK for NIP {r['nip']}")
+
                 all_rows.append(build_row(chain, r, search_term))
+
+                # Fetch local units if requested
+                if args.local_units and r.get("regon") and r.get("entity_type"):
+                    units = api_client.fetch_local_units(r["regon"], r["entity_type"])
+                    for u in units:
+                        local_unit_rows.append({
+                            "chain_name": chain["name"],
+                            "parent_nip": r.get("nip", ""),
+                            "parent_regon": r.get("regon", ""),
+                            "parent_name": r.get("name", ""),
+                            "regon14": u.get("regon14", ""),
+                            "unit_name": u.get("name", ""),
+                            "street": u.get("street", ""),
+                            "building": u.get("building", ""),
+                            "unit_number": u.get("unit_number", ""),
+                            "zip_code": u.get("zip_code", ""),
+                            "city": u.get("city", ""),
+                            "province": u.get("province", ""),
+                            "county": u.get("county", ""),
+                            "municipality": u.get("municipality", ""),
+                            "pkd_main": u.get("pkd_main", ""),
+                            "full_address": u.get("full_address", ""),
+                        })
+                    stats["local_units"] += len(units)
+
             logger.info(f"  -> Found {len(results)} entities")
         else:
             stats["not_found"] += 1
@@ -493,20 +592,28 @@ def main():
 
     logger.info(f"Saving to {args.output}")
     with pd.ExcelWriter(args.output, engine="openpyxl") as writer:
-        # Sheet 1: All results
         df_all.to_excel(writer, index=False, sheet_name="All Chains")
 
-        # Sheet 2: DIY only
         df_diy = df_all[df_all["category"] == "DIY"]
         if not df_diy.empty:
             df_diy.to_excel(writer, index=False, sheet_name="DIY Chains")
 
-        # Sheet 3: Mobile only
         df_mobile = df_all[df_all["category"] == "Mobile"]
         if not df_mobile.empty:
             df_mobile.to_excel(writer, index=False, sheet_name="Mobile Chains")
 
-        # Sheet 4: Summary
+        # Local units sheet
+        if local_unit_rows:
+            df_units = pd.DataFrame(local_unit_rows, columns=LOCAL_UNIT_COLUMNS).fillna("")
+            df_units.to_excel(writer, index=False, sheet_name="Local Units")
+            logger.info(f"  Sheet 'Local Units': {len(df_units)} branch locations")
+
+        # Has local units (chains with num_local_units > 0)
+        has_units = df_all[df_all["num_local_units"].astype(str).str.match(r'^[1-9]')]
+        if not has_units.empty:
+            has_units.to_excel(writer, index=False, sheet_name="Has Local Units")
+
+        # Summary
         summary = []
         for cat in ["DIY", "Mobile"]:
             cat_rows = [r for r in all_rows if r.get("category") == cat
@@ -528,7 +635,11 @@ def main():
     logger.info(f"  Found:           {stats['found']}")
     logger.info(f"  Not found:       {stats['not_found']}")
     logger.info(f"  Total entities:  {stats['total_entities']}")
+    if args.local_units:
+        logger.info(f"  Local units:     {stats['local_units']}")
     logger.info(f"Results: {args.output}")
+    if args.krs_only:
+        logger.info(f"NOTE: Used KRS-only mode. For more results, provide a GUS API key.")
 
 
 if __name__ == "__main__":
