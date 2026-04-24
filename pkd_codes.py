@@ -42,6 +42,20 @@ PKD_CODES = {
     "43.39.Z": "Other building completion and finishing",
     "43.91.Z": "Roofing activities",
     "43.99.Z": "Other specialised construction activities n.e.c.",
+    # Mobile phone / telecom retail
+    "47.42.Z": "Retail sale of telecommunications equipment in specialised stores",
+    "46.52.Z": "Wholesale of electronic and telecommunications equipment and parts",
+    "95.12.Z": "Repair of communication equipment",
+    "47.41.Z": "Retail sale of computers, peripheral units and software in specialised stores",
+    "47.43.Z": "Retail sale of audio and video equipment in specialised stores",
+    "46.43.Z": "Wholesale of electrical household appliances",
+    "61.10.Z": "Wired telecommunications activities",
+    "61.20.Z": "Wireless telecommunications activities",
+    "61.30.Z": "Satellite telecommunications activities",
+    "61.90.Z": "Other telecommunications activities",
+    "77.22.Z": "Renting of video tapes and disks (includes phone rental)",
+    "26.30.Z": "Manufacture of communication equipment",
+    "26.12.Z": "Manufacture of loaded electronic boards",
 }
 
 # PKD codes mapped to each target channel category
@@ -53,6 +67,10 @@ CATEGORY_PKD_MAPPING = {
     "Paint specialists": {
         "primary": ["47.52.Z", "20.30.Z"],
         "secondary": ["46.44.Z", "43.34.Z", "46.73.Z"],
+    },
+    "Mobile phone specialists": {
+        "primary": ["47.42.Z", "95.12.Z"],
+        "secondary": ["46.52.Z", "47.41.Z", "47.43.Z", "61.10.Z", "61.20.Z", "61.90.Z", "26.30.Z"],
     },
     "Builders merchants": {
         "primary": ["46.73.Z", "46.74.Z"],
